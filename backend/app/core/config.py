@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
 
     database_url: str = (
-        "mysql+pymysql://campus:campus@127.0.0.1:3306/campus_market?charset=utf8mb4"
+        "mysql+pymysql://campus:campus@127.0.0.1:3306/CampusMarket?charset=utf8mb4"
     )
 
     secret_key: str = "please-change-this-secret-key"
