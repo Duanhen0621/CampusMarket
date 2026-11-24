@@ -87,6 +87,49 @@ npm run dev
 # 访问 http://127.0.0.1:8080
 ```
 
+### 手动分终端启动
+
+不想用脚本时，按顺序开三个终端：
+
+**终端 1：后端**
+
+```bash
+cd ~/campus_market/backend
+.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+看到 Uvicorn 启动成功即可，验证：<http://127.0.0.1:8000/api/v1/health>
+
+**终端 2：前端生产预览**
+
+```bash
+cd ~/campus_market/frontend
+npm run build
+npm run preview -- --host 127.0.0.1 --port 8080
+```
+
+访问 <http://127.0.0.1:8080>。Preview 已配置代理 `/api`、`/uploads` 到后端，前后端同源。
+
+> 开发调试用 `npm run dev`（5173）；公网演示建议用 Preview（8080），因为 `vite.config.js` 只为 Preview 配置了 `trycloudflare.com` 的 `allowedHosts`。
+
+**终端 3：Cloudflare 隧道**
+
+```bash
+~/.local/bin/cloudflared tunnel --url http://127.0.0.1:8080 --no-autoupdate
+```
+
+等待终端输出 `https://xxxx.trycloudflare.com`，这个就是公网地址。
+
+如果找不到 cloudflared：
+
+```bash
+~/campus_market/scripts/install_cloudflared.sh
+# 或者临时加入 PATH
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+停止：在每个终端按 `Ctrl+C`，建议先停隧道，再停前端和后端。
+
 说明：
 
 - Quick Tunnel 每次启动地址都会变，适合一次性演示
