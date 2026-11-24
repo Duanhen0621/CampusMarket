@@ -23,3 +23,8 @@ class OrderOut(BaseModel):
     seller_id: int
     status: int
     created_at: datetime
+
+    item_title: str | None = None
+    item_cover_url: str | None = None
+    buyer_student_id: str | None = None
+    seller_student_id: str | None = None
