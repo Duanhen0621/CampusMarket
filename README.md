@@ -56,6 +56,44 @@ npm run dev
 
 访问 <http://127.0.0.1:5173>，开发服务器已把 `/api`、`/uploads` 代理到 `127.0.0.1:8000`。
 
+## 公网演示（本机 + Cloudflare Tunnel）
+
+答辩时如果希望手机、其他电脑直接访问，可以使用 Quick Tunnel 把本机服务暴露成临时 HTTPS 地址，不需要公网 IP、不需要改代码。
+
+前提：
+
+- MySQL 已启动，`backend/.env` 可用
+- 已安装 `cloudflared`（没有的话执行 `scripts/install_cloudflared.sh`）
+- 8000 和 8080 端口未被占用（先停掉开发用的 uvicorn / Vite）
+
+一条命令启动：
+
+```bash
+./scripts/start_demo.sh
+```
+
+脚本会依次：
+
+1. 启动后端 Uvicorn（127.0.0.1:8000）
+2. 执行前端生产构建，并用 Vite Preview 提供静态服务（127.0.0.1:8080）
+3. 启动 Cloudflare Quick Tunnel，终端会输出 `https://xxxx.trycloudflare.com` 公网地址
+
+把公网地址发给老师或其他设备访问即可。按 `Ctrl+C` 会同时停止后端、前端和隧道。
+
+只在本地验证、不开隧道：
+
+```bash
+./scripts/start_demo.sh --no-tunnel
+# 访问 http://127.0.0.1:8080
+```
+
+说明：
+
+- Quick Tunnel 每次启动地址都会变，适合一次性演示
+- 图片仍然保存在本机 `backend/static/uploads/`，不会丢失
+- 演示结束后一定关闭隧道；链接有效期内任何拿到地址的人都能访问
+- 使用的演示账号：`20260000`（超级管理员，密码同号）、`20260001`～`20260003`（学生，密码同号）
+
 ## 运行测试
 
 后端提供基于 pytest 的接口自动化测试：
