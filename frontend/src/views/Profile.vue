@@ -88,7 +88,68 @@
         </el-tab-pane>
 
         <el-tab-pane label="我的订单" name="orders">
-          <el-empty description="订单功能将在 Order 模块实现" />
+          <el-table v-loading="orderLoading" :data="orders" border>
+            <el-table-column label="商品">
+              <template #default="{ row }">
+                <el-link type="primary" @click="$router.push(`/items/${row.item_id}`)">
+                  {{ row.item_title }}
+                </el-link>
+              </template>
+            </el-table-column>
+            <el-table-column label="我的身份" width="90">
+              <template #default="{ row }">
+                {{ isSeller(row) ? '卖家' : '买家' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="对方" width="130">
+              <template #default="{ row }">
+                {{ isSeller(row) ? row.buyer_student_id : row.seller_student_id }}
+              </template>
+            </el-table-column>
+            <el-table-column label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag :type="orderStatusMap[row.status]?.type || 'info'">
+                  {{ orderStatusMap[row.status]?.text || '未知' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="创建时间" width="170">
+              <template #default="{ row }">
+                {{ row.created_at?.replace('T', ' ').slice(0, 16) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="220">
+              <template #default="{ row }">
+                <template v-if="row.status === 0">
+                  <el-button
+                    v-if="isSeller(row)"
+                    size="small"
+                    type="primary"
+                    @click="updateOrder(row, 1)"
+                  >
+                    确认交易
+                  </el-button>
+                  <el-button size="small" @click="updateOrder(row, 3)">
+                    取消订单
+                  </el-button>
+                </template>
+                <template v-else-if="row.status === 1">
+                  <el-button size="small" type="success" @click="updateOrder(row, 2)">
+                    完成交易
+                  </el-button>
+                  <el-button size="small" @click="updateOrder(row, 3)">
+                    取消订单
+                  </el-button>
+                </template>
+                <span v-else class="muted">—</span>
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-empty
+            v-if="!orderLoading && !orders.length"
+            description="暂无订单"
+            :image-size="80"
+          />
         </el-tab-pane>
       </el-tabs>
     </el-card>
@@ -108,6 +169,19 @@ const loading = ref(false)
 const myItems = ref([])
 const favLoading = ref(false)
 const favorites = ref([])
+const orderLoading = ref(false)
+const orders = ref([])
+
+const orderStatusMap = {
+  0: { text: '待确认', type: 'warning' },
+  1: { text: '交易中', type: 'primary' },
+  2: { text: '已完成', type: 'success' },
+  3: { text: '已取消', type: 'info' },
+}
+
+function isSeller(row) {
+  return row.seller_id === auth.user?.id
+}
 
 const statusMap = {
   0: { text: '待审核', type: 'warning' },
@@ -167,9 +241,38 @@ async function removeFavorite(row) {
   }
 }
 
+async function loadOrders() {
+  orderLoading.value = true
+  try {
+    const { data } = await http.get('/orders/my', { params: { page: 1, size: 50 } })
+    orders.value = data.data.list
+  } catch (error) {
+    ElMessage.error(error.response?.data?.detail || '加载订单失败')
+  } finally {
+    orderLoading.value = false
+  }
+}
+
+async function updateOrder(row, targetStatus) {
+  const labels = { 1: '确认交易', 2: '完成交易', 3: '取消订单' }
+  try {
+    await ElMessageBox.confirm(`确定${labels[targetStatus]}吗？`, '订单操作', {
+      type: 'warning',
+    })
+    await http.put(`/orders/${row.id}/status`, { status: targetStatus })
+    ElMessage.success(`${labels[targetStatus]}成功`)
+    loadOrders()
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error(error.response?.data?.detail || '操作失败')
+    }
+  }
+}
+
 onMounted(() => {
   loadMyItems()
   loadFavorites()
+  loadOrders()
 })
 </script>
 
