@@ -6,8 +6,16 @@
           <h2 class="panel-title" style="margin-bottom: 6px">个人中心</h2>
           <div class="muted">学号：{{ auth.user?.student_id || '-' }}</div>
         </div>
-        <el-tag :type="auth.isAdmin ? 'danger' : 'info'">
-          {{ auth.isAdmin ? '平台管理员' : '普通学生' }}
+        <el-tag
+          :type="auth.isSuperAdmin ? 'danger' : auth.isAdmin ? 'warning' : 'info'"
+        >
+          {{
+            auth.isSuperAdmin
+              ? '超级管理员'
+              : auth.isAdmin
+                ? '平台管理员'
+                : '普通学生'
+          }}
         </el-tag>
       </div>
     </el-card>
@@ -176,13 +184,73 @@
             :image-size="80"
           />
         </el-tab-pane>
+
+        <el-tab-pane v-if="!auth.isAdmin" label="管理员申请" name="apply">
+          <el-alert
+            v-if="latestApplication && latestApplication.status === 0"
+            type="warning"
+            :closable="false"
+            title="申请待超级管理员审批"
+            :description="`提交时间：${formatTime(latestApplication.created_at)}`"
+            style="margin-bottom: 12px"
+          />
+          <el-alert
+            v-else-if="latestApplication && latestApplication.status === 2"
+            type="error"
+            :closable="false"
+            title="上次申请被驳回"
+            :description="latestApplication.review_note || '未填写驳回说明'"
+            style="margin-bottom: 12px"
+          />
+
+          <el-input
+            v-model="applyReason"
+            type="textarea"
+            :rows="3"
+            maxlength="500"
+            show-word-limit
+            placeholder="请说明申请理由（至少 10 个字），例如：希望协助审核商品和处理举报"
+          />
+          <el-button
+            type="primary"
+            :loading="applying"
+            :disabled="latestApplication?.status === 0"
+            style="margin-top: 12px"
+            @click="submitApplication"
+          >
+            {{ latestApplication?.status === 0 ? '申请待审批' : '提交申请' }}
+          </el-button>
+
+          <el-table
+            v-if="myApplications.length"
+            :data="myApplications"
+            border
+            style="margin-top: 16px"
+          >
+            <el-table-column prop="id" label="ID" width="70" />
+            <el-table-column prop="reason" label="申请理由" />
+            <el-table-column label="状态" width="110">
+              <template #default="{ row }">
+                <el-tag :type="applicationStatusMap[row.status]?.type || 'info'">
+                  {{ applicationStatusMap[row.status]?.text || '未知' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="review_note" label="审批备注" width="180" />
+            <el-table-column label="提交时间" width="170">
+              <template #default="{ row }">
+                {{ formatTime(row.created_at) }}
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
       </el-tabs>
     </el-card>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 import http from '@/api/http'
@@ -203,6 +271,24 @@ const reportStatusMap = {
   0: { text: '待处理', type: 'warning' },
   1: { text: '已处理', type: 'success' },
   2: { text: '已驳回', type: 'info' },
+}
+
+const appLoading = ref(false)
+const applying = ref(false)
+const applyReason = ref('')
+const myApplications = ref([])
+
+const applicationStatusMap = {
+  0: { text: '待审批', type: 'warning' },
+  1: { text: '已通过', type: 'success' },
+  2: { text: '已驳回', type: 'danger' },
+}
+
+const latestApplication = computed(() => myApplications.value[0] || null)
+
+function formatTime(value) {
+  if (!value) return ''
+  return value.replace('T', ' ').slice(0, 16)
 }
 
 const orderStatusMap = {
@@ -316,11 +402,45 @@ async function loadMyReports() {
   }
 }
 
+async function loadMyApplications() {
+  appLoading.value = true
+  try {
+    const { data } = await http.get('/admin-applications/my', {
+      params: { page: 1, size: 20 },
+    })
+    myApplications.value = data.data.list
+  } catch (error) {
+    ElMessage.error(error.response?.data?.detail || '加载管理员申请失败')
+  } finally {
+    appLoading.value = false
+  }
+}
+
+async function submitApplication() {
+  const reason = applyReason.value.trim()
+  if (reason.length < 10) {
+    ElMessage.warning('申请理由至少 10 个字')
+    return
+  }
+  applying.value = true
+  try {
+    await http.post('/admin-applications', { reason })
+    ElMessage.success('申请已提交，请等待超级管理员审批')
+    applyReason.value = ''
+    loadMyApplications()
+  } catch (error) {
+    ElMessage.error(error.response?.data?.detail || '提交申请失败')
+  } finally {
+    applying.value = false
+  }
+}
+
 onMounted(() => {
   loadMyItems()
   loadFavorites()
   loadOrders()
   loadMyReports()
+  loadMyApplications()
 })
 </script>
 
