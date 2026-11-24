@@ -28,3 +28,6 @@ class ReportOut(BaseModel):
     handle_note: str | None = None
     created_at: datetime
     handled_at: datetime | None = None
+
+    reporter_student_id: str | None = None
+    target_label: str | None = None

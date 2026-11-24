@@ -35,28 +35,51 @@
         </el-tab-pane>
 
         <el-tab-pane label="举报工单" name="reports">
-          <el-table :data="reports" border>
-            <el-table-column prop="id" label="ID" width="80" />
-            <el-table-column prop="target" label="被举报对象" />
-            <el-table-column prop="reason" label="原因" />
-            <el-table-column prop="status" label="状态" width="120">
+          <div style="margin-bottom: 12px">
+            <el-select
+              v-model="reportStatus"
+              placeholder="全部状态"
+              clearable
+              style="width: 170px"
+              @change="loadReports"
+            >
+              <el-option label="待处理" :value="0" />
+              <el-option label="已处理 / 属实" :value="1" />
+              <el-option label="已驳回 / 不属实" :value="2" />
+            </el-select>
+          </div>
+          <el-table v-loading="reportLoading" :data="reports" border>
+            <el-table-column prop="id" label="ID" width="70" />
+            <el-table-column prop="reporter_student_id" label="举报人" width="130" />
+            <el-table-column prop="target_label" label="举报对象" width="220" />
+            <el-table-column prop="reason" label="举报原因" />
+            <el-table-column label="状态" width="110">
               <template #default="{ row }">
-                <el-tag :type="row.status === 0 ? 'warning' : 'success'">
-                  {{ row.status === 0 ? '待处理' : '已处理' }}
+                <el-tag :type="reportStatusMap[row.status]?.type || 'info'">
+                  {{ reportStatusMap[row.status]?.text || '未知' }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="160">
+            <el-table-column prop="handle_note" label="处理备注" width="180" />
+            <el-table-column label="操作" width="170">
               <template #default="{ row }">
-                <el-button size="small" @click="handleReport(row)">
-                  处理
-                </el-button>
+                <template v-if="row.status === 0">
+                  <el-button size="small" type="success" @click="handle(row, 1)">
+                    属实
+                  </el-button>
+                  <el-button size="small" type="danger" @click="handle(row, 2)">
+                    不属实
+                  </el-button>
+                </template>
+                <span v-else class="muted">—</span>
               </template>
             </el-table-column>
           </el-table>
-          <div class="muted" style="margin-top: 10px">
-            举报处理将在 Admin/举报模块实现（PUT /api/v1/admin/reports/&#123;id&#125;）。
-          </div>
+          <el-empty
+            v-if="!reportLoading && !reports.length"
+            description="暂无举报工单"
+            :image-size="80"
+          />
         </el-tab-pane>
       </el-tabs>
     </el-card>
@@ -72,10 +95,15 @@ import http from '@/api/http'
 const activeTab = ref('audit')
 const loading = ref(false)
 const pendingItems = ref([])
+const reports = ref([])
+const reportLoading = ref(false)
+const reportStatus = ref(null)
 
-const reports = ref([
-  { id: 36, target: '商品 #1025', reason: '疑似虚假信息', status: 0 },
-])
+const reportStatusMap = {
+  0: { text: '待处理', type: 'warning' },
+  1: { text: '已处理 / 属实', type: 'success' },
+  2: { text: '已驳回 / 不属实', type: 'info' },
+}
 
 async function loadPending() {
   loading.value = true
@@ -115,9 +143,46 @@ async function audit(row, status) {
   }
 }
 
-function handleReport(row) {
-  ElMessage.info(`举报处理尚未实现（工单 ${row.id}）`)
+async function loadReports() {
+  reportLoading.value = true
+  try {
+    const { data } = await http.get('/admin/reports', {
+      params: {
+        page: 1,
+        size: 50,
+        status: reportStatus.value === null ? undefined : reportStatus.value,
+      },
+    })
+    reports.value = data.data.list
+  } catch (error) {
+    ElMessage.error(error.response?.data?.detail || '加载举报工单失败')
+  } finally {
+    reportLoading.value = false
+  }
 }
 
-onMounted(loadPending)
+async function handle(row, targetStatus) {
+  try {
+    const { value } = await ElMessageBox.prompt(
+      targetStatus === 1 ? '处理备注（可选）' : '驳回说明（可选）',
+      targetStatus === 1 ? '标记举报属实' : '标记举报不属实',
+      { inputPlaceholder: '可留空' },
+    )
+    await http.put(`/admin/reports/${row.id}`, {
+      status: targetStatus,
+      handle_note: value || null,
+    })
+    ElMessage.success('处理成功')
+    loadReports()
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error(error.response?.data?.detail || '处理失败')
+    }
+  }
+}
+
+onMounted(() => {
+  loadPending()
+  loadReports()
+})
 </script>
