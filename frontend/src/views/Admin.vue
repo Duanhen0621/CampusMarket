@@ -4,10 +4,17 @@
       <h2 class="panel-title">管理后台</h2>
       <el-tabs v-model="activeTab">
         <el-tab-pane label="商品审核" name="audit">
-          <el-table :data="pendingItems" border>
-            <el-table-column prop="id" label="ID" width="80" />
+          <el-table v-loading="loading" :data="pendingItems" border>
+            <el-table-column prop="id" label="ID" width="70" />
             <el-table-column prop="title" label="标题" />
-            <el-table-column prop="student_id" label="发布者" width="140" />
+            <el-table-column label="发布者" width="100">
+              <template #default="{ row }">#{{ row.user_id }}</template>
+            </el-table-column>
+            <el-table-column label="价格" width="110">
+              <template #default="{ row }">
+                {{ row.price !== null ? `¥ ${row.price}` : '面议' }}
+              </template>
+            </el-table-column>
             <el-table-column prop="created_at" label="发布时间" width="180" />
             <el-table-column label="操作" width="180">
               <template #default="{ row }">
@@ -20,9 +27,11 @@
               </template>
             </el-table-column>
           </el-table>
-          <div class="muted" style="margin-top: 10px">
-            审核接口待实现（PUT /api/v1/admin/items/&#123;id&#125;/audit）。
-          </div>
+          <el-empty
+            v-if="!loading && !pendingItems.length"
+            description="暂无待审核商品"
+            :image-size="80"
+          />
         </el-tab-pane>
 
         <el-tab-pane label="举报工单" name="reports">
@@ -46,7 +55,7 @@
             </el-table-column>
           </el-table>
           <div class="muted" style="margin-top: 10px">
-            举报处理接口待实现（PUT /api/v1/admin/reports/&#123;id&#125;）。
+            举报处理将在 Admin/举报模块实现（PUT /api/v1/admin/reports/&#123;id&#125;）。
           </div>
         </el-tab-pane>
       </el-tabs>
@@ -55,25 +64,60 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { onMounted, ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+
+import http from '@/api/http'
 
 const activeTab = ref('audit')
-
-const pendingItems = ref([
-  { id: 1024, title: '九成新山地自行车', student_id: '20210001', created_at: '2026-11-20 10:12' },
-  { id: 1025, title: '求购：宿舍小冰箱', student_id: '20210002', created_at: '2026-11-21 09:30' },
-])
+const loading = ref(false)
+const pendingItems = ref([])
 
 const reports = ref([
   { id: 36, target: '商品 #1025', reason: '疑似虚假信息', status: 0 },
 ])
 
-function audit(row, status) {
-  ElMessage.info(`审核接口尚未实现（商品 ${row.id}，status=${status}）`)
+async function loadPending() {
+  loading.value = true
+  try {
+    const { data } = await http.get('/admin/items/pending', {
+      params: { page: 1, size: 50 },
+    })
+    pendingItems.value = data.data.list
+  } catch (error) {
+    ElMessage.error(error.response?.data?.detail || '加载待审核商品失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+async function audit(row, status) {
+  try {
+    let reason = null
+    if (status === 2) {
+      const { value } = await ElMessageBox.prompt('请输入驳回原因', '驳回商品', {
+        inputPattern: /\S+/,
+        inputErrorMessage: '请填写驳回原因',
+      })
+      reason = value
+    } else {
+      await ElMessageBox.confirm(`确定通过「${row.title}」吗？`, '审核商品', {
+        type: 'warning',
+      })
+    }
+    await http.put(`/admin/items/${row.id}/audit`, { status, reason })
+    ElMessage.success('操作成功')
+    loadPending()
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error(error.response?.data?.detail || '操作失败')
+    }
+  }
 }
 
 function handleReport(row) {
-  ElMessage.info(`举报处理接口尚未实现（工单 ${row.id}）`)
+  ElMessage.info(`举报处理尚未实现（工单 ${row.id}）`)
 }
+
+onMounted(loadPending)
 </script>

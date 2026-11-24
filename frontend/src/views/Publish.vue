@@ -41,9 +41,7 @@
         </el-button>
       </el-form-item>
     </el-form>
-    <div class="muted">
-      骨架阶段：发布接口尚未实现（POST /api/v1/items），图片上传接口随后接入。
-    </div>
+    <div class="muted">发布后需管理员审核通过，才会在首页展示。</div>
   </el-card>
 </template>
 
@@ -70,14 +68,27 @@ async function submit() {
   }
   loading.value = true
   try {
+    const imageUrls = []
+    for (const file of form.files) {
+      if (!file.raw) continue
+      const formData = new FormData()
+      formData.append('file', file.raw)
+      const { data } = await http.post('/uploads/image', formData)
+      imageUrls.push(data.data.url)
+    }
+
     await http.post('/items', {
       title: form.title,
       description: form.description || null,
       type: form.type,
       price: form.price,
-      image_urls: [],
+      image_urls: imageUrls,
     })
     ElMessage.success('发布成功，等待审核')
+    form.title = ''
+    form.description = ''
+    form.price = null
+    form.files = []
   } catch (error) {
     ElMessage.error(error.response?.data?.detail || '发布失败')
   } finally {

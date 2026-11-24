@@ -26,7 +26,12 @@ const props = defineProps({
 
 defineEmits(['click'])
 
-const coverUrl = computed(() => props.item.cover_url || props.item.image_urls || '')
+const coverUrl = computed(() => {
+  if (props.item.cover_url) return props.item.cover_url
+  const urls = props.item.image_urls
+  if (Array.isArray(urls)) return urls[0] || ''
+  return urls || ''
+})
 
 const typeText = computed(
   () => ({ 1: '出售', 2: '求购', 3: '交换' })[props.item.type] || '闲置',

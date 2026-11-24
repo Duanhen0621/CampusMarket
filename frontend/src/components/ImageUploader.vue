@@ -13,7 +13,7 @@
       <span class="upload-plus">+</span>
     </el-upload>
     <div class="muted">
-      支持 JPG / PNG，单张不超过 5MB；后端上传接口接入后自动压缩并返回 URL。
+      支持 JPG / PNG / WebP，单张不超过 5MB；上传后自动压缩并返回 URL。
     </div>
   </div>
 </template>
