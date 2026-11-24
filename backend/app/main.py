@@ -1,11 +1,9 @@
-from pathlib import Path
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
-from app.routers import admin, auth, interaction, items, orders, reports
+from app.routers import admin, auth, interaction, items, orders, reports, uploads
 
 app = FastAPI(title=settings.app_name, version="0.1.0")
 
@@ -17,11 +15,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-upload_dir = Path(settings.upload_dir)
+upload_dir = settings.upload_path
 upload_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(upload_dir)), name="uploads")
 
-for module in (auth, items, interaction, orders, admin, reports):
+for module in (auth, items, interaction, orders, admin, reports, uploads):
     app.include_router(module.router, prefix=settings.api_v1_prefix)
 
 

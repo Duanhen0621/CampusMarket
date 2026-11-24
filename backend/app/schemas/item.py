@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 
 class ItemCreate(BaseModel):
@@ -26,15 +26,14 @@ class ItemAuditRequest(BaseModel):
 
 
 class ItemOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
     id: int
     user_id: int
     title: str
     description: str | None = None
     type: int
     price: Decimal | None = None
-    image_urls: str | None = None
+    image_urls: list[str] = Field(default_factory=list)
+    cover_url: str | None = None
     status: int
     reject_reason: str | None = None
     created_at: datetime
