@@ -53,7 +53,7 @@ class AuditService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在"
             )
-        if user.role == 1:
+        if user.role >= 1:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="不能封禁管理员账号",
