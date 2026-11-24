@@ -19,7 +19,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 
 const props = defineProps({
@@ -30,6 +30,13 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const fileList = ref([])
+
+watch(
+  () => props.modelValue,
+  (value) => {
+    fileList.value = Array.isArray(value) ? value : []
+  },
+)
 
 function handleChange(file, files) {
   if (file.size && file.size > 5 * 1024 * 1024) {
