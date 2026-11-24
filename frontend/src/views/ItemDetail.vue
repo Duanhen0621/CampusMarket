@@ -47,7 +47,7 @@
               </el-descriptions-item>
             </el-descriptions>
             <div class="detail-actions">
-              <el-button type="primary" @click="createOrder">我想要</el-button>
+              <el-button type="primary" @click="createOrder">{{ actionText }}</el-button>
               <el-button :loading="favoriting" @click="toggleFavorite">
                 {{ favorited ? '取消收藏' : '收藏' }}
               </el-button>
@@ -105,6 +105,10 @@ const favoriting = ref(false)
 
 const typeText = computed(
   () => ({ 1: '出售', 2: '求购', 3: '交换' })[item.value?.type] || '闲置',
+)
+
+const actionText = computed(
+  () => ({ 1: '我想要', 2: '我要出售', 3: '我想交换' })[item.value?.type] || '联系卖家',
 )
 
 function formatTime(value) {
@@ -194,8 +198,15 @@ async function toggleFavorite() {
   }
 }
 
-function createOrder() {
-  ElMessage.info('订单功能将在 Order 模块实现')
+async function createOrder() {
+  if (!requireLogin()) return
+  try {
+    await http.post('/orders', { item_id: Number(route.params.id) })
+    ElMessage.success('订单已发起，请等待卖家确认')
+    router.push({ name: 'profile' })
+  } catch (err) {
+    ElMessage.error(err.response?.data?.detail || '发起订单失败')
+  }
 }
 
 onMounted(async () => {
