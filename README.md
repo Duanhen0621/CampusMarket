@@ -56,6 +56,18 @@ npm run dev
 
 访问 <http://127.0.0.1:5173>，开发服务器已把 `/api`、`/uploads` 代理到 `127.0.0.1:8000`。
 
+## 运行测试
+
+后端提供基于 pytest 的接口自动化测试：
+
+```bash
+cd backend
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/pytest -q
+```
+
+测试自动创建独立数据库 `CampusMarketTest`，不会影响 `CampusMarket` 演示数据。测试结果与用例明细见 [测试记录.md](测试记录.md)。
+
 ## 后续模块顺序
 
 Auth/User（JWT）→ Item（发布/上传/审核）→ Interaction（留言/收藏）→ Order → Admin/举报。
