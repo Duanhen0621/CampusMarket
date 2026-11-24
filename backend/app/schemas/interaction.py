@@ -13,6 +13,7 @@ class MessageOut(BaseModel):
     id: int
     item_id: int
     user_id: int
+    student_id: str | None = None
     content: str
     created_at: datetime
 
