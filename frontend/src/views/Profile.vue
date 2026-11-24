@@ -51,7 +51,40 @@
         </el-tab-pane>
 
         <el-tab-pane label="我的收藏" name="favorites">
-          <el-empty description="收藏功能将在 Interaction 模块实现" />
+          <el-table v-loading="favLoading" :data="favorites" border>
+            <el-table-column prop="id" label="ID" width="70" />
+            <el-table-column label="标题">
+              <template #default="{ row }">
+                <el-link type="primary" @click="$router.push(`/items/${row.id}`)">
+                  {{ row.title }}
+                </el-link>
+              </template>
+            </el-table-column>
+            <el-table-column label="价格" width="110">
+              <template #default="{ row }">
+                {{ row.price !== null ? `¥ ${row.price}` : '面议' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag :type="statusMap[row.status]?.type || 'info'">
+                  {{ statusMap[row.status]?.text || '未知' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="120">
+              <template #default="{ row }">
+                <el-button size="small" @click="removeFavorite(row)">
+                  取消收藏
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-empty
+            v-if="!favLoading && !favorites.length"
+            description="暂无收藏"
+            :image-size="80"
+          />
         </el-tab-pane>
 
         <el-tab-pane label="我的订单" name="orders">
@@ -73,6 +106,8 @@ const auth = useAuthStore()
 const activeTab = ref('items')
 const loading = ref(false)
 const myItems = ref([])
+const favLoading = ref(false)
+const favorites = ref([])
 
 const statusMap = {
   0: { text: '待审核', type: 'warning' },
@@ -108,7 +143,34 @@ async function offShelf(row) {
   }
 }
 
-onMounted(loadMyItems)
+async function loadFavorites() {
+  favLoading.value = true
+  try {
+    const { data } = await http.get('/favorites/my', {
+      params: { page: 1, size: 50 },
+    })
+    favorites.value = data.data.list
+  } catch (error) {
+    ElMessage.error(error.response?.data?.detail || '加载收藏失败')
+  } finally {
+    favLoading.value = false
+  }
+}
+
+async function removeFavorite(row) {
+  try {
+    await http.delete(`/items/${row.id}/favorite`)
+    ElMessage.success('已取消收藏')
+    loadFavorites()
+  } catch (error) {
+    ElMessage.error(error.response?.data?.detail || '取消收藏失败')
+  }
+}
+
+onMounted(() => {
+  loadMyItems()
+  loadFavorites()
+})
 </script>
 
 <style scoped>

@@ -48,7 +48,7 @@
             </el-descriptions>
             <div class="detail-actions">
               <el-button type="primary" @click="createOrder">我想要</el-button>
-              <el-button @click="toggleFavorite">
+              <el-button :loading="favoriting" @click="toggleFavorite">
                 {{ favorited ? '取消收藏' : '收藏' }}
               </el-button>
               <el-button @click="$router.back()">返回</el-button>
@@ -60,8 +60,11 @@
       <el-card shadow="never" style="margin-top: 16px">
         <h3 class="panel-title">留言</h3>
         <div v-for="message in messages" :key="message.id" class="message">
-          <span class="message-user">{{ message.user }}</span>
+          <span class="message-user">
+            {{ message.student_id || `#${message.user_id}` }}
+          </span>
           <span>{{ message.content }}</span>
+          <span class="message-time">{{ formatTime(message.created_at) }}</span>
         </div>
         <el-empty v-if="!messages.length" description="还没有留言" :image-size="80" />
         <div class="message-form">
@@ -71,7 +74,7 @@
             maxlength="500"
             show-word-limit
           />
-          <el-button type="primary" @click="sendMessage">发送</el-button>
+          <el-button type="primary" :loading="sending" @click="sendMessage">发送</el-button>
         </div>
       </el-card>
     </template>
@@ -80,12 +83,15 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
 import http from '@/api/http'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
+const router = useRouter()
+const auth = useAuthStore()
 
 const item = ref(null)
 const loading = ref(true)
@@ -94,10 +100,17 @@ const activeCover = ref('')
 const messages = ref([])
 const messageInput = ref('')
 const favorited = ref(false)
+const sending = ref(false)
+const favoriting = ref(false)
 
 const typeText = computed(
   () => ({ 1: '出售', 2: '求购', 3: '交换' })[item.value?.type] || '闲置',
 )
+
+function formatTime(value) {
+  if (!value) return ''
+  return value.replace('T', ' ').slice(0, 16)
+}
 
 async function load() {
   loading.value = true
@@ -112,23 +125,86 @@ async function load() {
   }
 }
 
-function sendMessage() {
-  if (!messageInput.value.trim()) {
+async function loadMessages() {
+  try {
+    const { data } = await http.get(`/items/${route.params.id}/messages`, {
+      params: { page: 1, size: 100 },
+    })
+    messages.value = data.data.list
+  } catch {
+    messages.value = []
+  }
+}
+
+async function checkFavorite() {
+  if (!auth.isLoggedIn) return
+  try {
+    const { data } = await http.get(`/favorites/check/${route.params.id}`)
+    favorited.value = data.data.favorited
+  } catch {
+    favorited.value = false
+  }
+}
+
+function requireLogin() {
+  if (auth.isLoggedIn) return true
+  ElMessage.warning('请先登录')
+  router.push({ name: 'login', query: { redirect: route.fullPath } })
+  return false
+}
+
+async function sendMessage() {
+  if (!requireLogin()) return
+  const content = messageInput.value.trim()
+  if (!content) {
     ElMessage.warning('请输入留言内容')
     return
   }
-  ElMessage.info('留言功能将在 Interaction 模块实现')
+  sending.value = true
+  try {
+    const { data } = await http.post(`/items/${route.params.id}/messages`, {
+      content,
+    })
+    messages.value.push(data.data)
+    messageInput.value = ''
+  } catch (err) {
+    ElMessage.error(err.response?.data?.detail || '留言失败')
+  } finally {
+    sending.value = false
+  }
 }
 
-function toggleFavorite() {
-  ElMessage.info('收藏功能将在 Interaction 模块实现')
+async function toggleFavorite() {
+  if (!requireLogin()) return
+  favoriting.value = true
+  try {
+    if (favorited.value) {
+      await http.delete(`/items/${route.params.id}/favorite`)
+      favorited.value = false
+      ElMessage.success('已取消收藏')
+    } else {
+      await http.post(`/items/${route.params.id}/favorite`)
+      favorited.value = true
+      ElMessage.success('收藏成功')
+    }
+  } catch (err) {
+    ElMessage.error(err.response?.data?.detail || '操作失败')
+  } finally {
+    favoriting.value = false
+  }
 }
 
 function createOrder() {
   ElMessage.info('订单功能将在 Order 模块实现')
 }
 
-onMounted(load)
+onMounted(async () => {
+  await load()
+  if (item.value) {
+    loadMessages()
+    checkFavorite()
+  }
+})
 </script>
 
 <style scoped>
@@ -188,6 +264,12 @@ onMounted(load)
 .message-user {
   color: #2f6fb2;
   margin-right: 8px;
+}
+
+.message-time {
+  color: #a8abb2;
+  font-size: 12px;
+  margin-left: 8px;
 }
 
 .message-form {
