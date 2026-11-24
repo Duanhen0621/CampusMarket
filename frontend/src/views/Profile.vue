@@ -151,6 +151,31 @@
             :image-size="80"
           />
         </el-tab-pane>
+
+        <el-tab-pane label="我的举报" name="reports">
+          <el-table v-loading="reportLoading" :data="myReports" border>
+            <el-table-column prop="target_label" label="举报对象" width="220" />
+            <el-table-column prop="reason" label="举报原因" />
+            <el-table-column label="状态" width="110">
+              <template #default="{ row }">
+                <el-tag :type="reportStatusMap[row.status]?.type || 'info'">
+                  {{ reportStatusMap[row.status]?.text || '未知' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="handle_note" label="处理结果" width="180" />
+            <el-table-column label="提交时间" width="170">
+              <template #default="{ row }">
+                {{ row.created_at?.replace('T', ' ').slice(0, 16) }}
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-empty
+            v-if="!reportLoading && !myReports.length"
+            description="暂无举报记录"
+            :image-size="80"
+          />
+        </el-tab-pane>
       </el-tabs>
     </el-card>
   </div>
@@ -171,6 +196,14 @@ const favLoading = ref(false)
 const favorites = ref([])
 const orderLoading = ref(false)
 const orders = ref([])
+const reportLoading = ref(false)
+const myReports = ref([])
+
+const reportStatusMap = {
+  0: { text: '待处理', type: 'warning' },
+  1: { text: '已处理', type: 'success' },
+  2: { text: '已驳回', type: 'info' },
+}
 
 const orderStatusMap = {
   0: { text: '待确认', type: 'warning' },
@@ -269,10 +302,25 @@ async function updateOrder(row, targetStatus) {
   }
 }
 
+async function loadMyReports() {
+  reportLoading.value = true
+  try {
+    const { data } = await http.get('/reports/my', {
+      params: { page: 1, size: 50 },
+    })
+    myReports.value = data.data.list
+  } catch (error) {
+    ElMessage.error(error.response?.data?.detail || '加载举报记录失败')
+  } finally {
+    reportLoading.value = false
+  }
+}
+
 onMounted(() => {
   loadMyItems()
   loadFavorites()
   loadOrders()
+  loadMyReports()
 })
 </script>
 

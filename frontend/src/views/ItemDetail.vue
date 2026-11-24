@@ -51,6 +51,7 @@
               <el-button :loading="favoriting" @click="toggleFavorite">
                 {{ favorited ? '取消收藏' : '收藏' }}
               </el-button>
+              <el-button @click="reportItem">举报</el-button>
               <el-button @click="$router.back()">返回</el-button>
             </div>
           </el-col>
@@ -84,7 +85,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 import http from '@/api/http'
 import { useAuthStore } from '@/stores/auth'
@@ -206,6 +207,26 @@ async function createOrder() {
     router.push({ name: 'profile' })
   } catch (err) {
     ElMessage.error(err.response?.data?.detail || '发起订单失败')
+  }
+}
+
+async function reportItem() {
+  if (!requireLogin()) return
+  try {
+    const { value } = await ElMessageBox.prompt('请描述举报原因', '举报商品', {
+      inputPattern: /\S+/,
+      inputErrorMessage: '请填写举报原因',
+    })
+    await http.post('/reports', {
+      target_type: 1,
+      target_id: Number(route.params.id),
+      reason: value,
+    })
+    ElMessage.success('举报已提交，等待管理员处理')
+  } catch (err) {
+    if (err !== 'cancel' && err !== 'close') {
+      ElMessage.error(err.response?.data?.detail || '举报失败')
+    }
   }
 }
 
