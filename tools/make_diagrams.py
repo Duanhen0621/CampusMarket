@@ -141,6 +141,7 @@ C_MSG     = ("#FFE3C6", "#FFF7EE", "#E0A163")
 C_FAV     = ("#D3E6F8", "#F0F7FD", "#6FA8DC")
 C_ORDER   = ("#D8EDD3", "#F3FAF0", "#7AB86C")
 C_REPORT  = ("#F8D6D6", "#FDF0F0", "#CF7B7B")
+C_APP     = ("#F6ECD2", "#FCF7EA", "#C9A227")
 
 body = []
 def add(s): body.append(s)
@@ -150,7 +151,7 @@ users_rows = [
  ("student_id","VARCHAR(20)","UQ","学号（登录账号）"),
  ("password","VARCHAR(255)","","密码（加密存储）"),
  ("phone","VARCHAR(20)","","手机号"),
- ("role","INT","","0=学生 1=管理员"),
+ ("role","INT","","0=学生 1=管理员 2=超管"),
  ("status","INT","","1=正常 0=封禁"),
  ("created_at","DATETIME","","注册时间"),
 ]
@@ -189,6 +190,16 @@ order_rows = [
  ("created_at","DATETIME","","创建时间"),
  ("(业务规则)","—","","同一商品仅一条活跃订单"),
 ]
+app_rows = [
+ ("id","INT","PK","主键"),
+ ("user_id","INT","FK","申请人"),
+ ("reason","VARCHAR(500)","","申请理由"),
+ ("status","INT","","0=待审批 1=通过 2=驳回"),
+ ("reviewer_id","INT","FK","审批人"),
+ ("review_note","VARCHAR(255)","","审批备注"),
+ ("created_at","DATETIME","","申请时间"),
+ ("reviewed_at","DATETIME","","审批时间"),
+]
 report_rows = [
  ("id","INT","PK","主键"),
  ("reporter_id","INT","FK","举报人"),
@@ -203,6 +214,7 @@ report_rows = [
 ]
 
 t_users   = (920, 60,  780)
+t_apps    = (40,  60,  780)
 t_items   = (60,  680, 840)
 t_reports = (1660,680, 900)
 t_msgs    = (40,  1560,680)
@@ -211,6 +223,7 @@ t_orders  = (1520,1560,840)
 
 for (x,y,w), title, rows, cols in [
     (t_users,   "USERS",    users_rows,  C_USERS),
+    (t_apps,    "ADMIN_APPLICATIONS", app_rows, C_APP),
     (t_items,   "ITEMS",    items_rows,  C_ITEMS),
     (t_reports, "REPORTS",  report_rows, C_REPORT),
     (t_msgs,    "MESSAGES", msg_rows,    C_MSG),
@@ -222,7 +235,7 @@ for (x,y,w), title, rows, cols in [
 
 # edges
 add(edge([(1100,470),(1100,590),(300,590),(300,680)], one=0, many=-1))
-add(edge([(920,260),(20,260),(20,1470),(200,1470),(200,1560)], one=0, many=-1))
+add(edge([(1000,470),(1000,540),(20,540),(20,1470),(200,1470),(200,1560)], one=0, many=-1))
 add(edge([(380,1240),(380,1560)], one=0, many=-1))
 add(edge([(740,1240),(740,1450),(1100,1450),(1100,1560)], one=0, many=-1))
 add(edge([(1350,470),(1350,1560)], one=0, many=-1))
@@ -230,6 +243,8 @@ add(edge([(1700,340),(2700,340),(2700,1800),(2360,1800)], one=0, many=-1))
 add(edge([(1600,470),(1600,620),(1800,620),(1800,680)], one=0, many=-1))
 add(edge([(1660,900),(900,900)], dashed=True, arrow_end=-1))
 add(edge([(900,1150),(1300,1150),(1300,1420),(1520,1420),(1520,1560)], one=0, many=-1))
+add(edge([(920,180),(820,180)], one=0, many=-1))
+add(edge([(920,400),(820,400)], one=0, many=-1))
 
 # edge labels
 for s in [
@@ -242,6 +257,8 @@ for s in [
     text(1620,602,"提交 / 处理",22,"start",halo=True),
     text(1280,878,"指向（多态）",22,"middle",halo=True),
     text(960,1132,"产生",22,"start",halo=True),
+    text(870,160,"申请",22,"middle",halo=True),
+    text(870,380,"审批",22,"middle",halo=True),
 ]:
     add(s)
 # cardinality labels
@@ -254,6 +271,8 @@ for x,y,s in [
     (1725,368,"1"),(2390,1778,"N"),
     (1625,500,"1"),(1825,658,"N"),
     (925,1178,"1"),(1545,1532,"N"),
+    (900,205,"1"),(840,205,"N"),
+    (900,425,"1"),(840,425,"N"),
 ]:
     add(text(x,y,s,19,"middle","normal","#5c5c5c",halo=True))
 
@@ -267,6 +286,7 @@ U_USER  = ("#F1DDF2", "#B07CC6")
 U_ITEM  = ("#D6F1EC", "#4FB3A9")
 U_REP   = ("#F8DCD8", "#CF7B7B")
 U_ORD   = ("#E1F1D8", "#7AB86C")
+U_APP   = ("#F8EFD4", "#C9A227")
 
 body2 = []
 def add2(s): body2.append(s)
@@ -308,6 +328,9 @@ item_methods = ["+create_item()","+update_item()","+off_shelf()"]
 report_attrs = ["+report_id: int","+reporter_id: int","+target_type: int","+target_id: int",
                 "+reason: str","+status: int","+handler_id: int"]
 report_methods = ["+create_report()","+get_pending_reports()"]
+app_attrs = ["+application_id: int","+user_id: int","+reason: str","+status: int",
+             "+reviewer_id: int","+review_note: str"]
+app_methods = ["+apply()","+review()"]
 order_attrs = ["+order_id: int","+item_id: int","+buyer_id: int","+seller_id: int","+status: int"]
 order_methods = ["+create_order()","+confirm_trade()","+cancel_order()"]
 
@@ -317,6 +340,7 @@ for (x,y,w), name, attrs, meths, cols in [
     ((80,820,640),  "Item",         item_attrs,  item_methods,  U_ITEM),
     ((1000,1500,640),"Report",      report_attrs,report_methods,U_REP),
     ((1000,2180,600),"Order",       order_attrs, order_methods, U_ORD),
+    ((100,1650,700), "AdminApplication", app_attrs, app_methods, U_APP),
 ]:
     s, _ = uml_class(x, y, w, name, attrs, meths, *cols)
     add2(s)
@@ -324,8 +348,9 @@ for (x,y,w), name, attrs, meths, cols in [
 # associations
 add2(edge([(1320,620),(760,620),(760,760),(520,760),(520,820)], one=0, many=-1))
 add2(edge([(1500,826),(1500,1500)], one=0, many=-1))
+add2(edge([(1320,760),(900,760),(900,1450),(500,1450),(500,1650)], one=0, many=-1))
 add2(edge([(1920,700),(2380,700),(2380,2400),(1600,2400)], one=0, many=-1))
-add2(edge([(300,1294),(300,2400),(1000,2400)], one=0, many=-1))
+add2(edge([(300,1294),(300,1400),(40,1400),(40,2400),(1000,2400)], one=0, many=-1))
 # dependencies
 add2(edge([(900,276),(900,740),(400,740),(400,820)], dashed=True, arrow_end=-1))
 add2(edge([(1480,140),(2050,140),(2050,520),(1920,520)], dashed=True, arrow_end=-1))
@@ -337,6 +362,7 @@ for s in [
     text(1530,1150,"提交",22,"start",halo=True),
     text(2410,1500,"买入 / 卖出",22,"middle",rot=-90,halo=True),
     text(650,2378,"产生",22,"middle",halo=True),
+    text(1100,742,"申请 / 审批",22,"middle",halo=True),
     text(650,716,"审核依赖",22,"middle",halo=True),
     text(1760,116,"封禁依赖",22,"middle",halo=True),
     text(1176,900,"处理举报依赖",22,"middle",rot=-90,halo=True),
@@ -348,6 +374,7 @@ for x,y,s in [
     (1525,855,"1"),(1525,1475,"*"),
     (1945,725,"1"),(1615,2378,"*"),
     (325,1320,"1"),(975,2378,"*"),
+    (1295,735,"1"),(525,1630,"*"),
 ]:
     add2(text(x,y,s,19,"middle","normal","#5c5c5c",halo=True))
 
