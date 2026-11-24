@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.models.item import Item
 from app.models.user import User
+from app.services.report_service import handle_report as handle_report_service
 
 
 class AuditService:
@@ -62,5 +63,13 @@ class AuditService:
         self.db.refresh(user)
         return user
 
-    def handle_report(self, report_id: int, status_: int, note: str | None) -> None:
-        raise NotImplementedError("举报处理逻辑待实现")
+    def handle_report(
+        self,
+        report_id: int,
+        new_status: int,
+        note: str | None,
+        handler: User,
+    ):
+        return handle_report_service(
+            self.db, handler, report_id, new_status, note
+        )

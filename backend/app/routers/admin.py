@@ -2,12 +2,12 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.deps import require_admin
-from app.core.stubs import not_implemented
 from app.db.session import get_db
+from app.models.user import User
 from app.schemas.common import ApiResponse, PageData
 from app.schemas.item import ItemAuditRequest, ItemOut
 from app.schemas.report import ReportHandleRequest, ReportOut
-from app.services import item_service
+from app.services import item_service, report_service
 from app.services.audit_service import AuditService
 
 router = APIRouter(
@@ -58,10 +58,25 @@ def list_reports(
     status: int | None = Query(None, ge=0, le=2),
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db),
 ):
-    not_implemented("举报工单列表")
+    total, rows = report_service.list_reports(db, page, size, status)
+    return ApiResponse(
+        data=PageData(total=total, page=page, size=size, list=rows)
+    )
 
 
 @router.put("/reports/{report_id}", response_model=ApiResponse[dict])
-def handle_report(report_id: int, payload: ReportHandleRequest):
-    not_implemented("处理举报")
+def handle_report(
+    report_id: int,
+    payload: ReportHandleRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    report = AuditService(db).handle_report(
+        report_id, payload.status, payload.handle_note, admin
+    )
+    return ApiResponse(
+        msg="举报处理成功",
+        data={"report_id": report.id, "status": report.status},
+    )
