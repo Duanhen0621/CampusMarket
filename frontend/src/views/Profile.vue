@@ -6,17 +6,20 @@
           <h2 class="panel-title" style="margin-bottom: 6px">个人中心</h2>
           <div class="muted">学号：{{ auth.user?.student_id || '-' }}</div>
         </div>
-        <el-tag
-          :type="auth.isSuperAdmin ? 'danger' : auth.isAdmin ? 'warning' : 'info'"
-        >
-          {{
-            auth.isSuperAdmin
-              ? '超级管理员'
-              : auth.isAdmin
-                ? '平台管理员'
-                : '普通学生'
-          }}
-        </el-tag>
+        <div class="profile-actions">
+          <el-button size="small" @click="openProfileEdit">编辑资料</el-button>
+          <el-tag
+            :type="auth.isSuperAdmin ? 'danger' : auth.isAdmin ? 'warning' : 'info'"
+          >
+            {{
+              auth.isSuperAdmin
+                ? '超级管理员'
+                : auth.isAdmin
+                  ? '平台管理员'
+                  : '普通学生'
+            }}
+          </el-tag>
+        </div>
       </div>
     </el-card>
 
@@ -39,15 +42,18 @@
               </template>
             </el-table-column>
             <el-table-column prop="reject_reason" label="驳回原因" width="180" />
-            <el-table-column label="操作" width="100">
+            <el-table-column label="操作" width="170">
               <template #default="{ row }">
-                <el-button
-                  v-if="row.status !== 3"
-                  size="small"
-                  @click="offShelf(row)"
-                >
-                  下架
-                </el-button>
+                <template v-if="row.status !== 3">
+                  <el-button
+                    size="small"
+                    type="primary"
+                    @click="$router.push(`/items/${row.id}/edit`)"
+                  >
+                    编辑
+                  </el-button>
+                  <el-button size="small" @click="offShelf(row)">下架</el-button>
+                </template>
               </template>
             </el-table-column>
           </el-table>
@@ -246,6 +252,20 @@
         </el-tab-pane>
       </el-tabs>
     </el-card>
+
+    <el-dialog v-model="editVisible" title="编辑资料" width="420px">
+      <el-form label-width="70px">
+        <el-form-item label="手机号">
+          <el-input v-model="editPhone" maxlength="20" placeholder="选填" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editVisible = false">取消</el-button>
+        <el-button type="primary" :loading="savingProfile" @click="saveProfile">
+          保存
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -285,6 +305,28 @@ const applicationStatusMap = {
 }
 
 const latestApplication = computed(() => myApplications.value[0] || null)
+
+const editVisible = ref(false)
+const editPhone = ref('')
+const savingProfile = ref(false)
+
+function openProfileEdit() {
+  editPhone.value = auth.user?.phone || ''
+  editVisible.value = true
+}
+
+async function saveProfile() {
+  savingProfile.value = true
+  try {
+    await auth.updateProfile({ phone: editPhone.value || null })
+    ElMessage.success('资料已更新')
+    editVisible.value = false
+  } catch (error) {
+    ElMessage.error(error.response?.data?.detail || '保存失败')
+  } finally {
+    savingProfile.value = false
+  }
+}
 
 function formatTime(value) {
   if (!value) return ''
@@ -449,5 +491,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.profile-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 </style>

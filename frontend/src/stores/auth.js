@@ -23,6 +23,12 @@ export const useAuthStore = defineStore('auth', {
       localStorage.setItem('user', JSON.stringify(this.user))
     },
 
+    async updateProfile(payload) {
+      const { data } = await http.put('/auth/me', payload)
+      this.user = data.data
+      localStorage.setItem('user', JSON.stringify(this.user))
+    },
+
     async fetchMe() {
       if (!this.token) return
       const { data } = await http.get('/auth/me')

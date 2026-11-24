@@ -62,6 +62,16 @@ def get_item(item_id: int, db: Session = Depends(get_db)):
     return ApiResponse(data=item_service.get_public_item(db, item_id))
 
 
+@router.get("/{item_id}/edit", response_model=ApiResponse[ItemOut])
+def get_item_for_edit(
+    item_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    item = item_service.get_owned_item(db, item_id, current_user)
+    return ApiResponse(data=item_service.to_item_out(item))
+
+
 @router.put("/{item_id}", response_model=ApiResponse[ItemOut])
 def update_item(
     item_id: int,

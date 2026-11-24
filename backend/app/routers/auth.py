@@ -7,7 +7,14 @@ from app.core.deps import get_current_user
 from app.core.security import create_access_token, hash_password, verify_password
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.auth import LoginRequest, RegisterRequest, TokenData, UserOut
+from app.services import user_service
+from app.schemas.auth import (
+    LoginRequest,
+    ProfileUpdate,
+    RegisterRequest,
+    TokenData,
+    UserOut,
+)
 from app.schemas.common import ApiResponse
 
 router = APIRouter(prefix="/auth", tags=["Auth/User"])
@@ -68,3 +75,13 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 @router.get("/me", response_model=ApiResponse[UserOut])
 def me(current_user: User = Depends(get_current_user)):
     return ApiResponse(data=UserOut.model_validate(current_user))
+
+
+@router.put("/me", response_model=ApiResponse[UserOut])
+def update_me(
+    payload: ProfileUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    user = user_service.update_profile(db, current_user, payload)
+    return ApiResponse(msg="资料已更新", data=UserOut.model_validate(user))

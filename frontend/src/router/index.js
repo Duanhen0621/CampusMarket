@@ -20,6 +20,12 @@ const routes = [
     component: () => import('@/views/ItemDetail.vue'),
   },
   {
+    path: '/items/:id/edit',
+    name: 'item-edit',
+    component: () => import('@/views/EditItem.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/publish',
     name: 'publish',
     component: () => import('@/views/Publish.vue'),

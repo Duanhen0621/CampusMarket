@@ -1,3 +1,6 @@
+from datetime import datetime
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -12,6 +15,14 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class ProfileUpdate(BaseModel):
+    phone: str | None = Field(default=None, max_length=20)
+
+
+class UserStatusUpdate(BaseModel):
+    status: Literal[0, 1] = Field(description="0=封禁 1=正常")
+
+
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -20,6 +31,7 @@ class UserOut(BaseModel):
     phone: str | None = None
     role: int = 0
     status: int = 1
+    created_at: datetime | None = None
 
 
 class TokenData(BaseModel):
