@@ -225,6 +225,13 @@ call(
     {"status": 1, "handle_note": "已核实，商品已驳回"},
 )
 
+call(
+    "POST",
+    "/admin-applications",
+    tokens["u3"],
+    {"reason": "希望协助审核商品并处理举报，每周可在线 10 小时以上"},
+)
+print("admin application created for 20260003")
 print("items:", item_ids)
 print("orders:", {"completed": order, "want": order_want, "cancelled": order_tent})
 print("reports handled:", report_done)

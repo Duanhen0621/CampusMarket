@@ -34,7 +34,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
@@ -52,4 +52,10 @@ function handleLogout() {
   auth.logout()
   router.push('/')
 }
+
+onMounted(() => {
+  if (auth.isLoggedIn) {
+    auth.fetchMe().catch(() => {})
+  }
+})
 </script>

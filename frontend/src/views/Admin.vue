@@ -34,6 +34,70 @@
           />
         </el-tab-pane>
 
+        <el-tab-pane v-if="auth.isSuperAdmin" label="管理员申请" name="applications">
+          <div style="margin-bottom: 12px">
+            <el-select
+              v-model="applicationStatus"
+              placeholder="全部状态"
+              clearable
+              style="width: 170px"
+              @change="loadApplications"
+            >
+              <el-option label="待审批" :value="0" />
+              <el-option label="已通过" :value="1" />
+              <el-option label="已驳回" :value="2" />
+            </el-select>
+          </div>
+          <el-table v-loading="applicationLoading" :data="applications" border>
+            <el-table-column prop="id" label="ID" width="70" />
+            <el-table-column
+              prop="applicant_student_id"
+              label="申请人"
+              width="130"
+            />
+            <el-table-column prop="reason" label="申请理由" />
+            <el-table-column label="状态" width="110">
+              <template #default="{ row }">
+                <el-tag :type="applicationStatusMap[row.status]?.type || 'info'">
+                  {{ applicationStatusMap[row.status]?.text || '未知' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="review_note" label="审批备注" width="180" />
+            <el-table-column label="提交时间" width="170">
+              <template #default="{ row }">
+                {{ formatTime(row.created_at) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="170">
+              <template #default="{ row }">
+                <template v-if="row.status === 0">
+                  <el-button
+                    size="small"
+                    type="success"
+                    @click="reviewApplication(row, 1)"
+                  >
+                    通过
+                  </el-button>
+                  <el-button
+                    size="small"
+                    type="danger"
+                    @click="reviewApplication(row, 2)"
+                  >
+                    驳回
+                  </el-button>
+                </template>
+                <span v-else class="muted">—</span>
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-empty
+            v-if="!applicationLoading && !applications.length"
+            description="暂无管理员申请"
+            :image-size="80"
+          />
+        </el-tab-pane>
+
         <el-tab-pane label="举报工单" name="reports">
           <div style="margin-bottom: 12px">
             <el-select
@@ -91,13 +155,29 @@ import { onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 import http from '@/api/http'
+import { useAuthStore } from '@/stores/auth'
 
+const auth = useAuthStore()
 const activeTab = ref('audit')
 const loading = ref(false)
 const pendingItems = ref([])
 const reports = ref([])
 const reportLoading = ref(false)
 const reportStatus = ref(null)
+const applicationLoading = ref(false)
+const applicationStatus = ref(null)
+const applications = ref([])
+
+const applicationStatusMap = {
+  0: { text: '待审批', type: 'warning' },
+  1: { text: '已通过', type: 'success' },
+  2: { text: '已驳回', type: 'danger' },
+}
+
+function formatTime(value) {
+  if (!value) return ''
+  return value.replace('T', ' ').slice(0, 16)
+}
 
 const reportStatusMap = {
   0: { text: '待处理', type: 'warning' },
@@ -184,8 +264,51 @@ async function handle(row, targetStatus) {
   }
 }
 
+async function loadApplications() {
+  applicationLoading.value = true
+  try {
+    const { data } = await http.get('/admin/applications', {
+      params: {
+        page: 1,
+        size: 50,
+        status:
+          applicationStatus.value === null || applicationStatus.value === ''
+            ? undefined
+            : applicationStatus.value,
+      },
+    })
+    applications.value = data.data.list
+  } catch (error) {
+    ElMessage.error(error.response?.data?.detail || '加载管理员申请失败')
+  } finally {
+    applicationLoading.value = false
+  }
+}
+
+async function reviewApplication(row, targetStatus) {
+  const label = targetStatus === 1 ? '通过' : '驳回'
+  try {
+    const { value } = await ElMessageBox.prompt(
+      '审批备注（可选）',
+      `确认${label}该申请`,
+      { inputPlaceholder: '可留空' },
+    )
+    await http.put(`/admin/applications/${row.id}`, {
+      status: targetStatus,
+      review_note: value || null,
+    })
+    ElMessage.success(`已${label}`)
+    loadApplications()
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error(error.response?.data?.detail || '审批失败')
+    }
+  }
+}
+
 onMounted(() => {
   loadPending()
   loadReports()
+  if (auth.isSuperAdmin) loadApplications()
 })
 </script>

@@ -3,7 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
-from app.routers import admin, auth, interaction, items, orders, reports, uploads
+from app.routers import (
+    admin,
+    admin_applications,
+    auth,
+    interaction,
+    items,
+    orders,
+    reports,
+    uploads,
+)
 from app.routers.interaction import favorites_router
 
 app = FastAPI(title=settings.app_name, version="0.1.0")
@@ -20,7 +29,16 @@ upload_dir = settings.upload_path
 upload_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(upload_dir)), name="uploads")
 
-for module in (auth, items, interaction, orders, admin, reports, uploads):
+for module in (
+    auth,
+    items,
+    interaction,
+    orders,
+    admin,
+    admin_applications,
+    reports,
+    uploads,
+):
     app.include_router(module.router, prefix=settings.api_v1_prefix)
 
 app.include_router(favorites_router, prefix=settings.api_v1_prefix)

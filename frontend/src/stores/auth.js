@@ -10,7 +10,8 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     isLoggedIn: (state) => Boolean(state.token),
-    isAdmin: (state) => state.user?.role === 1,
+    isAdmin: (state) => (state.user?.role ?? 0) >= 1,
+    isSuperAdmin: (state) => state.user?.role === 2,
   },
 
   actions: {
@@ -19,6 +20,13 @@ export const useAuthStore = defineStore('auth', {
       this.token = data.data.access_token
       this.user = data.data.user
       localStorage.setItem('token', this.token)
+      localStorage.setItem('user', JSON.stringify(this.user))
+    },
+
+    async fetchMe() {
+      if (!this.token) return
+      const { data } = await http.get('/auth/me')
+      this.user = data.data
       localStorage.setItem('user', JSON.stringify(this.user))
     },
 
