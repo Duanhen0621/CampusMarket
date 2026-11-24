@@ -150,7 +150,10 @@ async function loadReports() {
       params: {
         page: 1,
         size: 50,
-        status: reportStatus.value === null ? undefined : reportStatus.value,
+        status:
+          reportStatus.value === null || reportStatus.value === ''
+            ? undefined
+            : reportStatus.value,
       },
     })
     reports.value = data.data.list
