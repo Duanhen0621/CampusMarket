@@ -34,6 +34,63 @@
           />
         </el-tab-pane>
 
+        <el-tab-pane label="用户管理" name="users">
+          <div style="margin-bottom: 12px">
+            <el-input
+              v-model="userKeyword"
+              placeholder="按学号搜索"
+              clearable
+              style="width: 220px"
+              @keyup.enter="loadUsers"
+            />
+            <el-button type="primary" style="margin-left: 8px" @click="loadUsers">
+              搜索
+            </el-button>
+          </div>
+          <el-table v-loading="userLoading" :data="users" border>
+            <el-table-column prop="id" label="ID" width="70" />
+            <el-table-column prop="student_id" label="学号" width="140" />
+            <el-table-column prop="phone" label="手机号" width="150" />
+            <el-table-column label="角色" width="120">
+              <template #default="{ row }">
+                <el-tag :type="roleMap[row.role]?.type || 'info'">
+                  {{ roleMap[row.role]?.text || '未知' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag :type="row.status === 1 ? 'success' : 'danger'">
+                  {{ row.status === 1 ? '正常' : '已封禁' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="注册时间" width="170">
+              <template #default="{ row }">
+                {{ formatTime(row.created_at) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="130">
+              <template #default="{ row }">
+                <el-button
+                  v-if="row.role === 0"
+                  size="small"
+                  :type="row.status === 1 ? 'danger' : 'success'"
+                  @click="toggleUserStatus(row)"
+                >
+                  {{ row.status === 1 ? '封禁' : '解封' }}
+                </el-button>
+                <span v-else class="muted">管理员账号</span>
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-empty
+            v-if="!userLoading && !users.length"
+            description="暂无用户"
+            :image-size="80"
+          />
+        </el-tab-pane>
+
         <el-tab-pane v-if="auth.isSuperAdmin" label="管理员申请" name="applications">
           <div style="margin-bottom: 12px">
             <el-select
@@ -164,6 +221,9 @@ const pendingItems = ref([])
 const reports = ref([])
 const reportLoading = ref(false)
 const reportStatus = ref(null)
+const userLoading = ref(false)
+const userKeyword = ref('')
+const users = ref([])
 const applicationLoading = ref(false)
 const applicationStatus = ref(null)
 const applications = ref([])
@@ -172,6 +232,12 @@ const applicationStatusMap = {
   0: { text: '待审批', type: 'warning' },
   1: { text: '已通过', type: 'success' },
   2: { text: '已驳回', type: 'danger' },
+}
+
+const roleMap = {
+  0: { text: '学生', type: 'info' },
+  1: { text: '管理员', type: 'warning' },
+  2: { text: '超级管理员', type: 'danger' },
 }
 
 function formatTime(value) {
@@ -306,9 +372,45 @@ async function reviewApplication(row, targetStatus) {
   }
 }
 
+async function loadUsers() {
+  userLoading.value = true
+  try {
+    const { data } = await http.get('/admin/users', {
+      params: {
+        page: 1,
+        size: 100,
+        keyword: userKeyword.value || undefined,
+      },
+    })
+    users.value = data.data.list
+  } catch (error) {
+    ElMessage.error(error.response?.data?.detail || '加载用户失败')
+  } finally {
+    userLoading.value = false
+  }
+}
+
+async function toggleUserStatus(row) {
+  const next = row.status === 1 ? 0 : 1
+  const label = next === 0 ? '封禁' : '解封'
+  try {
+    await ElMessageBox.confirm(`确定${label}用户 ${row.student_id} 吗？`, '用户管理', {
+      type: 'warning',
+    })
+    await http.put(`/admin/users/${row.id}/status`, { status: next })
+    ElMessage.success(`${label}成功`)
+    loadUsers()
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error(error.response?.data?.detail || '操作失败')
+    }
+  }
+}
+
 onMounted(() => {
   loadPending()
   loadReports()
+  loadUsers()
   if (auth.isSuperAdmin) loadApplications()
 })
 </script>

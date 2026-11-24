@@ -8,10 +8,16 @@ from app.schemas.admin_application import (
     AdminApplicationOut,
     AdminApplicationReview,
 )
+from app.schemas.auth import UserOut, UserStatusUpdate
 from app.schemas.common import ApiResponse, PageData
 from app.schemas.item import ItemAuditRequest, ItemOut
 from app.schemas.report import ReportHandleRequest, ReportOut
-from app.services import admin_application_service, item_service, report_service
+from app.services import (
+    admin_application_service,
+    item_service,
+    report_service,
+    user_service,
+)
 from app.services.audit_service import AuditService
 
 router = APIRouter(
@@ -54,6 +60,37 @@ def ban_user(user_id: int, db: Session = Depends(get_db)):
     user = AuditService(db).ban_user(user_id)
     return ApiResponse(
         msg="用户已封禁", data={"user_id": user.id, "status": user.status}
+    )
+
+
+@router.get("/users", response_model=ApiResponse[PageData[UserOut]])
+def list_users(
+    keyword: str | None = None,
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
+    total, rows = user_service.list_users(db, page, size, keyword)
+    return ApiResponse(
+        data=PageData(
+            total=total,
+            page=page,
+            size=size,
+            list=[UserOut.model_validate(user) for user in rows],
+        )
+    )
+
+
+@router.put("/users/{user_id}/status", response_model=ApiResponse[dict])
+def update_user_status(
+    user_id: int,
+    payload: UserStatusUpdate,
+    db: Session = Depends(get_db),
+):
+    user = AuditService(db).set_user_status(user_id, payload.status)
+    return ApiResponse(
+        msg="用户已封禁" if payload.status == 0 else "用户已解封",
+        data={"user_id": user.id, "status": user.status},
     )
 
 

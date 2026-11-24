@@ -47,7 +47,11 @@ class AuditService:
         self.db.refresh(item)
         return item
 
-    def ban_user(self, user_id: int) -> User:
+    def set_user_status(self, user_id: int, new_status: int) -> User:
+        if new_status not in (0, 1):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="无效的用户状态"
+            )
         user = self.db.get(User, user_id)
         if user is None:
             raise HTTPException(
@@ -56,12 +60,15 @@ class AuditService:
         if user.role >= 1:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="不能封禁管理员账号",
+                detail="不能封禁或解封管理员账号",
             )
-        user.status = 0
+        user.status = new_status
         self.db.commit()
         self.db.refresh(user)
         return user
+
+    def ban_user(self, user_id: int) -> User:
+        return self.set_user_status(user_id, 0)
 
     def handle_report(
         self,

@@ -51,7 +51,8 @@
               <el-button :loading="favoriting" @click="toggleFavorite">
                 {{ favorited ? '取消收藏' : '收藏' }}
               </el-button>
-              <el-button @click="reportItem">举报</el-button>
+              <el-button @click="reportItem">举报商品</el-button>
+              <el-button @click="reportSeller">举报卖家</el-button>
               <el-button @click="$router.back()">返回</el-button>
             </div>
           </el-col>
@@ -230,6 +231,26 @@ async function reportItem() {
   }
 }
 
+
+async function reportSeller() {
+  if (!requireLogin()) return
+  try {
+    const { value } = await ElMessageBox.prompt('请描述举报原因', '举报卖家', {
+      inputPattern: /\S+/,
+      inputErrorMessage: '请填写举报原因',
+    })
+    await http.post('/reports', {
+      target_type: 2,
+      target_id: item.value.user_id,
+      reason: value,
+    })
+    ElMessage.success('举报已提交，等待管理员处理')
+  } catch (err) {
+    if (err !== 'cancel' && err !== 'close') {
+      ElMessage.error(err.response?.data?.detail || '举报失败')
+    }
+  }
+}
 onMounted(async () => {
   await load()
   if (item.value) {
