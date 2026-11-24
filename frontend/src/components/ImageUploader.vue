@@ -13,13 +13,13 @@
       <span class="upload-plus">+</span>
     </el-upload>
     <div class="muted">
-      支持 JPG / PNG，单张不超过 5MB；后端上传接口接入后自动压缩并返回 URL。
+      支持 JPG / PNG / WebP，单张不超过 5MB；上传后自动压缩并返回 URL。
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 
 const props = defineProps({
@@ -30,6 +30,13 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const fileList = ref([])
+
+watch(
+  () => props.modelValue,
+  (value) => {
+    fileList.value = Array.isArray(value) ? value : []
+  },
+)
 
 function handleChange(file, files) {
   if (file.size && file.size > 5 * 1024 * 1024) {

@@ -5,6 +5,8 @@
 
 from abc import ABC, abstractmethod
 
+from fastapi import HTTPException, status
+
 from app.schemas.item import ItemCreate
 
 
@@ -16,7 +18,11 @@ class PublishStrategy(ABC):
 
 class SaleStrategy(PublishStrategy):
     def validate(self, payload: ItemCreate) -> None:
-        return None
+        if payload.price is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="出售商品必须填写价格",
+            )
 
 
 class WantBuyStrategy(PublishStrategy):

@@ -1,20 +1,66 @@
 """管理员审核与举报处理业务（见设计说明书 4.1 / 4.5）。"""
 
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+
+from app.models.item import Item
+from app.models.user import User
 
 
 class AuditService:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def approve_item(self, item_id: int) -> None:
-        raise NotImplementedError("商品审核通过逻辑待实现")
+    def _get_pending_item(self, item_id: int) -> Item:
+        item = self.db.get(Item, item_id)
+        if item is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="商品不存在"
+            )
+        if item.status != 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="该商品不在待审核状态",
+            )
+        return item
 
-    def reject_item(self, item_id: int, reason: str) -> None:
-        raise NotImplementedError("商品驳回逻辑待实现（写入 reject_reason）")
+    def approve_item(self, item_id: int) -> Item:
+        item = self._get_pending_item(item_id)
+        item.status = 1
+        item.reject_reason = None
+        self.db.commit()
+        self.db.refresh(item)
+        return item
 
-    def ban_user(self, user_id: int) -> None:
-        raise NotImplementedError("用户封禁逻辑待实现")
+    def reject_item(self, item_id: int, reason: str) -> Item:
+        reason = (reason or "").strip()
+        if not reason:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="驳回商品时必须填写原因",
+            )
+        item = self._get_pending_item(item_id)
+        item.status = 2
+        item.reject_reason = reason
+        self.db.commit()
+        self.db.refresh(item)
+        return item
 
-    def handle_report(self, report_id: int, status: int, note: str | None) -> None:
+    def ban_user(self, user_id: int) -> User:
+        user = self.db.get(User, user_id)
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在"
+            )
+        if user.role == 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="不能封禁管理员账号",
+            )
+        user.status = 0
+        self.db.commit()
+        self.db.refresh(user)
+        return user
+
+    def handle_report(self, report_id: int, status_: int, note: str | None) -> None:
         raise NotImplementedError("举报处理逻辑待实现")
