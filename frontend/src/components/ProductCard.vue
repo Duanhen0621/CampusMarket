@@ -13,6 +13,7 @@
     <div class="info">
       <div class="title">{{ item.title }}</div>
       <div class="price">¥ {{ item.price ?? '面议' }}</div>
+      <div class="meta">{{ item.publisher_display_name || '校园用户' }}</div>
     </div>
   </el-card>
 </template>

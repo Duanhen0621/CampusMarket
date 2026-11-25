@@ -40,7 +40,7 @@
                 {{ item.publisher_display_name || '#' + item.user_id }}
               </el-descriptions-item>
               <el-descriptions-item label="发布时间">
-                {{ item.created_at }}
+                {{ formatTime(item.created_at) }}
               </el-descriptions-item>
               <el-descriptions-item label="描述">
                 {{ item.description || '暂无描述' }}
@@ -267,7 +267,7 @@ onMounted(async () => {
 <style scoped>
 .detail-cover {
   height: 320px;
-  background: #eef2f7;
+  background: #eef6f3;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -297,13 +297,13 @@ onMounted(async () => {
 }
 
 .thumbs img.active {
-  border-color: #2f6fb2;
+  border-color: var(--cm-primary);
 }
 
 .detail-price {
   font-size: 26px;
   font-weight: 700;
-  color: #e06c3c;
+  color: var(--cm-primary);
 }
 
 .detail-actions {
@@ -314,12 +314,12 @@ onMounted(async () => {
 
 .message {
   padding: 8px 0;
-  border-bottom: 1px dashed #ebeef5;
+  border-bottom: 1px dashed var(--cm-border);
   font-size: 14px;
 }
 
 .message-user {
-  color: #2f6fb2;
+  color: var(--cm-primary);
   margin-right: 8px;
 }
 

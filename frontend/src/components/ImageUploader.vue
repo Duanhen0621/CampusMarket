@@ -55,7 +55,7 @@ function handleExceed() {
 <style scoped>
 .upload-plus {
   font-size: 28px;
-  color: #909399;
+  color: var(--cm-muted);
   line-height: 1;
 }
 </style>
