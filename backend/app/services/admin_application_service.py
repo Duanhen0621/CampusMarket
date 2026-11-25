@@ -16,6 +16,8 @@ def _to_out(
     application: AdminApplication,
     applicant_student_id: str | None = None,
     reviewer_student_id: str | None = None,
+    applicant_display_name: str | None = None,
+    reviewer_display_name: str | None = None,
 ) -> AdminApplicationOut:
     return AdminApplicationOut(
         id=application.id,
@@ -28,6 +30,8 @@ def _to_out(
         reviewed_at=application.reviewed_at,
         applicant_student_id=applicant_student_id,
         reviewer_student_id=reviewer_student_id,
+        applicant_display_name=applicant_display_name,
+        reviewer_display_name=reviewer_display_name,
     )
 
 
@@ -112,6 +116,7 @@ def list_my(
             application,
             applicant_student_id=user.student_id,
             reviewer_student_id=reviewers.get(application.reviewer_id),
+            applicant_display_name=user.nickname or user.student_id,
         )
         for application in applications
     ]
@@ -136,7 +141,12 @@ def list_for_admin(
     applicant = aliased(User)
     reviewer = aliased(User)
     stmt = (
-        select(AdminApplication, applicant.student_id, reviewer.student_id)
+        select(
+            AdminApplication,
+            applicant.student_id,
+            applicant.nickname,
+            reviewer.student_id,
+        )
         .join(applicant, AdminApplication.user_id == applicant.id)
         .outerjoin(reviewer, AdminApplication.reviewer_id == reviewer.id)
     )
@@ -153,8 +163,14 @@ def list_for_admin(
             application,
             applicant_student_id=applicant_student_id,
             reviewer_student_id=reviewer_student_id,
+            applicant_display_name=applicant_nickname or applicant_student_id,
         )
-        for application, applicant_student_id, reviewer_student_id in rows
+        for (
+            application,
+            applicant_student_id,
+            applicant_nickname,
+            reviewer_student_id,
+        ) in rows
     ]
 
 

@@ -31,6 +31,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     user = User(
         student_id=payload.student_id,
         password=hash_password(payload.password),
+        nickname=(payload.nickname or "").strip() or None,
         phone=payload.phone,
     )
     db.add(user)

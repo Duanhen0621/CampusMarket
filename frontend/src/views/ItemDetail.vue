@@ -37,7 +37,7 @@
             <el-descriptions :column="1" border style="margin-top: 16px">
               <el-descriptions-item label="类型">{{ typeText }}</el-descriptions-item>
               <el-descriptions-item label="发布者">
-                #{{ item.user_id }}
+                {{ item.publisher_display_name || '#' + item.user_id }}
               </el-descriptions-item>
               <el-descriptions-item label="发布时间">
                 {{ item.created_at }}
@@ -63,7 +63,11 @@
         <h3 class="panel-title">留言</h3>
         <div v-for="message in messages" :key="message.id" class="message">
           <span class="message-user">
-            {{ message.student_id || `#${message.user_id}` }}
+            {{
+              message.display_name ||
+              message.student_id ||
+              `#${message.user_id}`
+            }}
           </span>
           <span>{{ message.content }}</span>
           <span class="message-time">{{ formatTime(message.created_at) }}</span>

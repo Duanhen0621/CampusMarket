@@ -40,6 +40,13 @@
               placeholder="至少 6 位"
             />
           </el-form-item>
+          <el-form-item label="昵称">
+            <el-input
+              v-model="registerForm.nickname"
+              maxlength="50"
+              placeholder="选填，不填则显示学号"
+            />
+          </el-form-item>
           <el-form-item label="手机号">
             <el-input v-model="registerForm.phone" placeholder="选填" />
           </el-form-item>
@@ -72,7 +79,12 @@ const mode = ref('login')
 const loading = ref(false)
 
 const loginForm = reactive({ student_id: '', password: '' })
-const registerForm = reactive({ student_id: '', password: '', phone: '' })
+const registerForm = reactive({
+  student_id: '',
+  password: '',
+  nickname: '',
+  phone: '',
+})
 
 function goAfterLogin() {
   router.push(route.query.redirect || '/')
@@ -109,6 +121,7 @@ async function submitRegister() {
     await http.post('/auth/register', {
       student_id: registerForm.student_id,
       password: registerForm.password,
+      nickname: registerForm.nickname || null,
       phone: registerForm.phone || null,
     })
     await auth.login({

@@ -23,7 +23,7 @@ def _label_resolver(db: Session, reports: list[Report]):
     users: dict[int, str] = {}
     if user_ids:
         users = {
-            user.id: user.student_id
+            user.id: (user.nickname or user.student_id)
             for user in db.scalars(select(User).where(User.id.in_(user_ids)))
         }
 
@@ -39,6 +39,7 @@ def _to_out(
     report: Report,
     reporter_student_id: str | None,
     target_label: str,
+    reporter_display_name: str | None = None,
 ) -> ReportOut:
     return ReportOut(
         id=report.id,
@@ -52,6 +53,7 @@ def _to_out(
         created_at=report.created_at,
         handled_at=report.handled_at,
         reporter_student_id=reporter_student_id,
+        reporter_display_name=reporter_display_name,
         target_label=target_label,
     )
 
@@ -125,7 +127,13 @@ def list_my_reports(
     ).all()
     resolve = _label_resolver(db, list(reports))
     return total, [
-        _to_out(report, user.student_id, resolve(report)) for report in reports
+        _to_out(
+            report,
+            user.student_id,
+            resolve(report),
+            reporter_display_name=user.nickname or user.student_id,
+        )
+        for report in reports
     ]
 
 
@@ -137,7 +145,7 @@ def list_reports(
 ) -> tuple[int, list[ReportOut]]:
     condition = Report.status == report_status if report_status is not None else None
     count_stmt = select(func.count()).select_from(Report)
-    rows_stmt = select(Report, User.student_id).join(
+    rows_stmt = select(Report, User.student_id, User.nickname).join(
         User, Report.reporter_id == User.id
     )
     if condition is not None:
@@ -150,11 +158,16 @@ def list_reports(
         .offset((page - 1) * size)
         .limit(size)
     ).all()
-    reports = [report for report, _ in rows]
+    reports = [report for report, _, _ in rows]
     resolve = _label_resolver(db, reports)
     return total, [
-        _to_out(report, reporter_student_id, resolve(report))
-        for report, reporter_student_id in rows
+        _to_out(
+            report,
+            reporter_student_id,
+            resolve(report),
+            reporter_display_name=reporter_nickname or reporter_student_id,
+        )
+        for report, reporter_student_id, reporter_nickname in rows
     ]
 
 

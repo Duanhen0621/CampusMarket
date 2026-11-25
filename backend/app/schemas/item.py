@@ -34,6 +34,7 @@ class ItemOut(BaseModel):
     price: Decimal | None = None
     image_urls: list[str] = Field(default_factory=list)
     cover_url: str | None = None
+    publisher_display_name: str | None = None
     status: int
     reject_reason: str | None = None
     created_at: datetime

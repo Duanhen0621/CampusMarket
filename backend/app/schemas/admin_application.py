@@ -24,3 +24,5 @@ class AdminApplicationOut(BaseModel):
     reviewed_at: datetime | None = None
     applicant_student_id: str | None = None
     reviewer_student_id: str | None = None
+    applicant_display_name: str | None = None
+    reviewer_display_name: str | None = None

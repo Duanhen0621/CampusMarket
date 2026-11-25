@@ -8,6 +8,7 @@ from app.models.item import Item
 from app.models.user import User
 from app.schemas.item import ItemCreate, ItemOut, ItemUpdate
 from app.services.publish_strategy import get_publish_strategy
+from app.services.user_service import display_name
 
 
 def load_image_urls(item: Item) -> list[str]:
@@ -33,6 +34,9 @@ def to_item_out(item: Item) -> ItemOut:
         price=item.price,
         image_urls=urls,
         cover_url=urls[0] if urls else None,
+        publisher_display_name=(
+            display_name(item.owner) if item.owner is not None else None
+        ),
         status=item.status,
         reject_reason=item.reject_reason,
         created_at=item.created_at,
