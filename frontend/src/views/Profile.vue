@@ -29,7 +29,7 @@
     <el-card shadow="never" style="margin-top: 16px">
       <el-tabs v-model="activeTab">
         <el-tab-pane label="我的发布" name="items">
-          <el-table v-loading="loading" :data="myItems" border>
+          <el-table empty-text=" " v-loading="loading" :data="myItems" border>
             <el-table-column prop="id" label="ID" width="70" />
             <el-table-column prop="title" label="标题" />
             <el-table-column label="价格" width="110">
@@ -68,7 +68,7 @@
         </el-tab-pane>
 
         <el-tab-pane label="我的收藏" name="favorites">
-          <el-table v-loading="favLoading" :data="favorites" border>
+          <el-table empty-text=" " v-loading="favLoading" :data="favorites" border>
             <el-table-column prop="id" label="ID" width="70" />
             <el-table-column label="标题">
               <template #default="{ row }">
@@ -105,7 +105,7 @@
         </el-tab-pane>
 
         <el-tab-pane label="我的订单" name="orders">
-          <el-table v-loading="orderLoading" :data="orders" border>
+          <el-table empty-text=" " v-loading="orderLoading" :data="orders" border>
             <el-table-column label="商品">
               <template #default="{ row }">
                 <el-link type="primary" @click="$router.push(`/items/${row.item_id}`)">
@@ -174,7 +174,7 @@
         </el-tab-pane>
 
         <el-tab-pane label="我的举报" name="reports">
-          <el-table v-loading="reportLoading" :data="myReports" border>
+          <el-table empty-text=" " v-loading="reportLoading" :data="myReports" border>
             <el-table-column prop="target_label" label="举报对象" width="220" />
             <el-table-column prop="reason" label="举报原因" />
             <el-table-column label="状态" width="110">

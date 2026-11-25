@@ -4,7 +4,7 @@
       <h2 class="panel-title">管理后台</h2>
       <el-tabs v-model="activeTab">
         <el-tab-pane label="商品审核" name="audit">
-          <el-table v-loading="loading" :data="pendingItems" border>
+          <el-table empty-text=" " v-loading="loading" :data="pendingItems" border>
             <el-table-column prop="id" label="ID" width="70" />
             <el-table-column prop="title" label="标题" />
             <el-table-column label="发布者" width="130">
@@ -17,7 +17,9 @@
                 {{ row.price !== null ? `¥ ${row.price}` : '面议' }}
               </template>
             </el-table-column>
-            <el-table-column prop="created_at" label="发布时间" width="180" />
+            <el-table-column label="发布时间" width="180">
+              <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+            </el-table-column>
             <el-table-column label="操作" width="180">
               <template #default="{ row }">
                 <el-button size="small" type="success" @click="audit(row, 1)">
@@ -49,7 +51,7 @@
               搜索
             </el-button>
           </div>
-          <el-table v-loading="userLoading" :data="users" border>
+          <el-table empty-text=" " v-loading="userLoading" :data="users" border>
             <el-table-column prop="id" label="ID" width="70" />
             <el-table-column prop="student_id" label="学号" width="140" />
             <el-table-column label="昵称" width="130">
@@ -122,7 +124,7 @@
               <el-option label="已驳回" :value="2" />
             </el-select>
           </div>
-          <el-table v-loading="applicationLoading" :data="applications" border>
+          <el-table empty-text=" " v-loading="applicationLoading" :data="applications" border>
             <el-table-column prop="id" label="ID" width="70" />
             <el-table-column label="申请人" width="140">
               <template #default="{ row }">
@@ -130,7 +132,7 @@
               </template>
             </el-table-column>
             <el-table-column prop="reason" label="申请理由" />
-            <el-table-column label="状态" width="110">
+            <el-table-column label="状态" width="140">
               <template #default="{ row }">
                 <el-tag :type="applicationStatusMap[row.status]?.type || 'info'">
                   {{ applicationStatusMap[row.status]?.text || '未知' }}
@@ -186,7 +188,7 @@
               <el-option label="已驳回 / 不属实" :value="2" />
             </el-select>
           </div>
-          <el-table v-loading="reportLoading" :data="reports" border>
+          <el-table empty-text=" " v-loading="reportLoading" :data="reports" border>
             <el-table-column prop="id" label="ID" width="70" />
             <el-table-column label="举报人" width="130">
               <template #default="{ row }">
@@ -202,7 +204,7 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="handle_note" label="处理备注" width="180" />
+            <el-table-column prop="handle_note" label="处理备注" width="200" />
             <el-table-column label="操作" width="170">
               <template #default="{ row }">
                 <template v-if="row.status === 0">
