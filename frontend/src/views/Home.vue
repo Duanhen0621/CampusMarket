@@ -7,7 +7,7 @@
         <p>校园里的好物，遇见下一位主人</p>
       </div>
       <div class="hero-badge">
-        <b>本周上新 {{ total }} 件</b>
+        <b>共 {{ total }} 件好物</b>
         <span>持续更新的校园好物</span>
       </div>
     </section>
