@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.deps import require_admin, require_super_admin
@@ -8,7 +8,7 @@ from app.schemas.admin_application import (
     AdminApplicationOut,
     AdminApplicationReview,
 )
-from app.schemas.auth import UserOut, UserStatusUpdate
+from app.schemas.auth import UserOut, UserRoleUpdate, UserStatusUpdate
 from app.schemas.common import ApiResponse, PageData
 from app.schemas.item import ItemAuditRequest, ItemOut
 from app.schemas.report import ReportHandleRequest, ReportOut
@@ -60,6 +60,25 @@ def ban_user(user_id: int, db: Session = Depends(get_db)):
     user = AuditService(db).ban_user(user_id)
     return ApiResponse(
         msg="用户已封禁", data={"user_id": user.id, "status": user.status}
+    )
+
+
+@router.put("/users/{user_id}/role", response_model=ApiResponse[dict])
+def update_user_role(
+    user_id: int,
+    payload: UserRoleUpdate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_super_admin),
+):
+    if payload.role != 0:
+        raise HTTPException(
+            status_code=400,
+            detail="暂不支持直接授予管理员，请通过管理员申请流程",
+        )
+    user = user_service.revoke_admin(db, user_id)
+    return ApiResponse(
+        msg="管理员已撤销",
+        data={"user_id": user.id, "role": user.role},
     )
 
 

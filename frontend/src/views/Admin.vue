@@ -7,8 +7,10 @@
           <el-table v-loading="loading" :data="pendingItems" border>
             <el-table-column prop="id" label="ID" width="70" />
             <el-table-column prop="title" label="标题" />
-            <el-table-column label="发布者" width="100">
-              <template #default="{ row }">#{{ row.user_id }}</template>
+            <el-table-column label="发布者" width="130">
+              <template #default="{ row }">
+                {{ row.publisher_display_name || '#' + row.user_id }}
+              </template>
             </el-table-column>
             <el-table-column label="价格" width="110">
               <template #default="{ row }">
@@ -50,6 +52,9 @@
           <el-table v-loading="userLoading" :data="users" border>
             <el-table-column prop="id" label="ID" width="70" />
             <el-table-column prop="student_id" label="学号" width="140" />
+            <el-table-column label="昵称" width="130">
+              <template #default="{ row }">{{ row.nickname || '—' }}</template>
+            </el-table-column>
             <el-table-column prop="phone" label="手机号" width="150" />
             <el-table-column label="角色" width="120">
               <template #default="{ row }">
@@ -70,17 +75,29 @@
                 {{ formatTime(row.created_at) }}
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="130">
+            <el-table-column label="操作" width="180">
               <template #default="{ row }">
-                <el-button
-                  v-if="row.role === 0"
-                  size="small"
-                  :type="row.status === 1 ? 'danger' : 'success'"
-                  @click="toggleUserStatus(row)"
-                >
-                  {{ row.status === 1 ? '封禁' : '解封' }}
-                </el-button>
-                <span v-else class="muted">管理员账号</span>
+                <template v-if="row.role === 0">
+                  <el-button
+                    size="small"
+                    :type="row.status === 1 ? 'danger' : 'success'"
+                    @click="toggleUserStatus(row)"
+                  >
+                    {{ row.status === 1 ? '封禁' : '解封' }}
+                  </el-button>
+                </template>
+                <template v-else-if="row.role === 1">
+                  <el-button
+                    v-if="auth.isSuperAdmin"
+                    size="small"
+                    type="danger"
+                    @click="revokeAdmin(row)"
+                  >
+                    撤销管理员
+                  </el-button>
+                  <span v-else class="muted">管理员账号</span>
+                </template>
+                <span v-else class="muted">超级管理员</span>
               </template>
             </el-table-column>
           </el-table>
@@ -107,11 +124,11 @@
           </div>
           <el-table v-loading="applicationLoading" :data="applications" border>
             <el-table-column prop="id" label="ID" width="70" />
-            <el-table-column
-              prop="applicant_student_id"
-              label="申请人"
-              width="130"
-            />
+            <el-table-column label="申请人" width="140">
+              <template #default="{ row }">
+                {{ row.applicant_display_name || row.applicant_student_id }}
+              </template>
+            </el-table-column>
             <el-table-column prop="reason" label="申请理由" />
             <el-table-column label="状态" width="110">
               <template #default="{ row }">
@@ -171,7 +188,11 @@
           </div>
           <el-table v-loading="reportLoading" :data="reports" border>
             <el-table-column prop="id" label="ID" width="70" />
-            <el-table-column prop="reporter_student_id" label="举报人" width="130" />
+            <el-table-column label="举报人" width="130">
+              <template #default="{ row }">
+                {{ row.reporter_display_name || row.reporter_student_id }}
+              </template>
+            </el-table-column>
             <el-table-column prop="target_label" label="举报对象" width="220" />
             <el-table-column prop="reason" label="举报原因" />
             <el-table-column label="状态" width="110">
@@ -387,6 +408,23 @@ async function loadUsers() {
     ElMessage.error(error.response?.data?.detail || '加载用户失败')
   } finally {
     userLoading.value = false
+  }
+}
+
+async function revokeAdmin(row) {
+  try {
+    await ElMessageBox.confirm(
+      `确定撤销 ${row.student_id} 的管理员权限吗？撤销后需要重新申请。`,
+      '撤销管理员',
+      { type: 'warning' },
+    )
+    await http.put(`/admin/users/${row.id}/role`, { role: 0 })
+    ElMessage.success('管理员已撤销')
+    loadUsers()
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error(error.response?.data?.detail || '操作失败')
+    }
   }
 }
 
