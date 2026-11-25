@@ -74,6 +74,7 @@ def make_user():
         role: int = 0,
         status: int = 1,
         phone: str | None = None,
+        nickname: str | None = None,
     ) -> int:
         session = TestingSessionLocal()
         user = User(
@@ -82,6 +83,7 @@ def make_user():
             role=role,
             status=status,
             phone=phone,
+            nickname=nickname,
         )
         session.add(user)
         session.commit()

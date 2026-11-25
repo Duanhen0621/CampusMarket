@@ -14,6 +14,7 @@ class MessageOut(BaseModel):
     item_id: int
     user_id: int
     student_id: str | None = None
+    display_name: str | None = None
     content: str
     created_at: datetime
 

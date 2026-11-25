@@ -28,3 +28,5 @@ class OrderOut(BaseModel):
     item_cover_url: str | None = None
     buyer_student_id: str | None = None
     seller_student_id: str | None = None
+    buyer_display_name: str | None = None
+    seller_display_name: str | None = None

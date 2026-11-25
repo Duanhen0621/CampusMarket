@@ -63,7 +63,14 @@ def list_my_orders(
     ) or 0
 
     rows = db.execute(
-        select(Order, Item, buyer.student_id, seller.student_id)
+        select(
+            Order,
+            Item,
+            buyer.student_id,
+            seller.student_id,
+            buyer.nickname,
+            seller.nickname,
+        )
         .join(Item, Order.item_id == Item.id)
         .join(buyer, Order.buyer_id == buyer.id)
         .join(seller, Order.seller_id == seller.id)
@@ -74,7 +81,14 @@ def list_my_orders(
     ).all()
 
     result = []
-    for order, item, buyer_student_id, seller_student_id in rows:
+    for (
+        order,
+        item,
+        buyer_student_id,
+        seller_student_id,
+        buyer_nickname,
+        seller_nickname,
+    ) in rows:
         urls = load_image_urls(item)
         result.append(
             OrderOut(
@@ -88,6 +102,8 @@ def list_my_orders(
                 item_cover_url=urls[0] if urls else None,
                 buyer_student_id=buyer_student_id,
                 seller_student_id=seller_student_id,
+                buyer_display_name=buyer_nickname or buyer_student_id,
+                seller_display_name=seller_nickname or seller_student_id,
             )
         )
     return total, result

@@ -4,7 +4,10 @@
       <div class="profile-head">
         <div>
           <h2 class="panel-title" style="margin-bottom: 6px">个人中心</h2>
-          <div class="muted">学号：{{ auth.user?.student_id || '-' }}</div>
+          <div class="muted">
+            学号：{{ auth.user?.student_id || '-' }}
+            <span v-if="auth.user?.nickname">· 昵称：{{ auth.user.nickname }}</span>
+          </div>
         </div>
         <div class="profile-actions">
           <el-button size="small" @click="openProfileEdit">编辑资料</el-button>
@@ -117,7 +120,11 @@
             </el-table-column>
             <el-table-column label="对方" width="130">
               <template #default="{ row }">
-                {{ isSeller(row) ? row.buyer_student_id : row.seller_student_id }}
+                {{
+                  isSeller(row)
+                    ? row.buyer_display_name || row.buyer_student_id
+                    : row.seller_display_name || row.seller_student_id
+                }}
               </template>
             </el-table-column>
             <el-table-column label="状态" width="100">
@@ -253,10 +260,32 @@
       </el-tabs>
     </el-card>
 
-    <el-dialog v-model="editVisible" title="编辑资料" width="420px">
-      <el-form label-width="70px">
+    <el-dialog v-model="editVisible" title="编辑资料" width="460px">
+      <el-form label-width="90px">
+        <el-form-item label="昵称">
+          <el-input
+            v-model="editNickname"
+            maxlength="50"
+            placeholder="留空则显示学号"
+          />
+        </el-form-item>
         <el-form-item label="手机号">
           <el-input v-model="editPhone" maxlength="20" placeholder="选填" />
+        </el-form-item>
+        <el-divider content-position="left">修改密码（可选）</el-divider>
+        <el-form-item label="原密码">
+          <el-input v-model="editOldPassword" type="password" show-password />
+        </el-form-item>
+        <el-form-item label="新密码">
+          <el-input
+            v-model="editNewPassword"
+            type="password"
+            show-password
+            placeholder="至少 6 位"
+          />
+        </el-form-item>
+        <el-form-item label="确认新密码">
+          <el-input v-model="editConfirmPassword" type="password" show-password />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -307,19 +336,50 @@ const applicationStatusMap = {
 const latestApplication = computed(() => myApplications.value[0] || null)
 
 const editVisible = ref(false)
+const editNickname = ref('')
 const editPhone = ref('')
+const editOldPassword = ref('')
+const editNewPassword = ref('')
+const editConfirmPassword = ref('')
 const savingProfile = ref(false)
 
 function openProfileEdit() {
+  editNickname.value = auth.user?.nickname || ''
   editPhone.value = auth.user?.phone || ''
+  editOldPassword.value = ''
+  editNewPassword.value = ''
+  editConfirmPassword.value = ''
   editVisible.value = true
 }
 
 async function saveProfile() {
+  if (editNewPassword.value) {
+    if (!editOldPassword.value) {
+      ElMessage.warning('修改密码请填写原密码')
+      return
+    }
+    if (editNewPassword.value.length < 6) {
+      ElMessage.warning('新密码至少 6 位')
+      return
+    }
+    if (editNewPassword.value !== editConfirmPassword.value) {
+      ElMessage.warning('两次输入的新密码不一致')
+      return
+    }
+  }
+
   savingProfile.value = true
   try {
-    await auth.updateProfile({ phone: editPhone.value || null })
-    ElMessage.success('资料已更新')
+    const payload = {
+      nickname: editNickname.value.trim() || null,
+      phone: editPhone.value || null,
+    }
+    if (editNewPassword.value) {
+      payload.old_password = editOldPassword.value
+      payload.new_password = editNewPassword.value
+    }
+    await auth.updateProfile(payload)
+    ElMessage.success(editNewPassword.value ? '资料与密码已更新' : '资料已更新')
     editVisible.value = false
   } catch (error) {
     ElMessage.error(error.response?.data?.detail || '保存失败')

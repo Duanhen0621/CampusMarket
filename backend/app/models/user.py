@@ -14,6 +14,9 @@ class User(Base):
         String(20), unique=True, nullable=False, index=True, comment="学号（登录账号）"
     )
     password: Mapped[str] = mapped_column(String(255), nullable=False, comment="密码哈希")
+    nickname: Mapped[str | None] = mapped_column(
+        String(50), comment="昵称（为空时显示学号）"
+    )
     phone: Mapped[str | None] = mapped_column(String(20), comment="手机号")
     role: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, server_default="0", comment="0=学生 1=管理员"

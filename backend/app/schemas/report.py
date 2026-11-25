@@ -30,4 +30,5 @@ class ReportOut(BaseModel):
     handled_at: datetime | None = None
 
     reporter_student_id: str | None = None
+    reporter_display_name: str | None = None
     target_label: str | None = None

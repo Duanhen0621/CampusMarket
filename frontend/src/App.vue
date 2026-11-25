@@ -18,7 +18,7 @@
 
       <div class="header-right">
         <template v-if="auth.isLoggedIn">
-          <span class="student">{{ auth.user?.student_id }}</span>
+          <span class="student">{{ auth.displayName }}</span>
           <el-button link @click="handleLogout">退出</el-button>
         </template>
         <el-button v-else type="primary" @click="router.push('/login')">

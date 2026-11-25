@@ -10,6 +10,7 @@ from app.models.user import User
 from app.schemas.interaction import MessageOut
 from app.schemas.item import ItemOut
 from app.services.item_service import to_item_out
+from app.services.user_service import display_name
 
 
 def _get_public_item(db: Session, item_id: int) -> Item:
@@ -29,7 +30,7 @@ def list_messages(
         select(func.count()).select_from(Message).where(Message.item_id == item_id)
     ) or 0
     rows = db.execute(
-        select(Message, User.student_id)
+        select(Message, User.nickname, User.student_id)
         .join(User, Message.user_id == User.id)
         .where(Message.item_id == item_id)
         .order_by(Message.created_at.asc())
@@ -42,10 +43,11 @@ def list_messages(
             item_id=message.item_id,
             user_id=message.user_id,
             student_id=student_id,
+            display_name=nickname or student_id,
             content=message.content,
             created_at=message.created_at,
         )
-        for message, student_id in rows
+        for message, nickname, student_id in rows
     ]
 
 
@@ -67,6 +69,7 @@ def create_message(
         item_id=message.item_id,
         user_id=message.user_id,
         student_id=user.student_id,
+        display_name=display_name(user),
         content=message.content,
         created_at=message.created_at,
     )
