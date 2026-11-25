@@ -149,6 +149,7 @@ def add(s): body.append(s)
 users_rows = [
  ("id","INT","PK","主键"),
  ("student_id","VARCHAR(20)","UQ","学号（登录账号）"),
+ ("nickname","VARCHAR(50)","","昵称（空则显示学号）"),
  ("password","VARCHAR(255)","","密码（加密存储）"),
  ("phone","VARCHAR(20)","","手机号"),
  ("role","INT","","0=学生 1=管理员 2=超管"),
@@ -234,13 +235,13 @@ for (x,y,w), title, rows, cols in [
     add(s)
 
 # edges
-add(edge([(1100,470),(1100,590),(300,590),(300,680)], one=0, many=-1))
-add(edge([(1000,470),(1000,540),(20,540),(20,1470),(200,1470),(200,1560)], one=0, many=-1))
+add(edge([(1100,520),(1100,590),(300,590),(300,680)], one=0, many=-1))
+add(edge([(1000,520),(1000,560),(20,560),(20,1470),(200,1470),(200,1560)], one=0, many=-1))
 add(edge([(380,1240),(380,1560)], one=0, many=-1))
 add(edge([(740,1240),(740,1450),(1100,1450),(1100,1560)], one=0, many=-1))
-add(edge([(1350,470),(1350,1560)], one=0, many=-1))
+add(edge([(1350,520),(1350,1560)], one=0, many=-1))
 add(edge([(1700,340),(2700,340),(2700,1800),(2360,1800)], one=0, many=-1))
-add(edge([(1600,470),(1600,620),(1800,620),(1800,680)], one=0, many=-1))
+add(edge([(1600,520),(1600,620),(1800,620),(1800,680)], one=0, many=-1))
 add(edge([(1660,900),(900,900)], dashed=True, arrow_end=-1))
 add(edge([(900,1150),(1300,1150),(1300,1420),(1520,1420),(1520,1560)], one=0, many=-1))
 add(edge([(920,180),(820,180)], one=0, many=-1))
@@ -263,13 +264,13 @@ for s in [
     add(s)
 # cardinality labels
 for x,y,s in [
-    (1125,505,"1"),(325,660,"N"),
+    (1125,555,"1"),(325,660,"N"),
     (893,285,"1"),(225,1535,"N"),
     (405,1268,"1"),(405,1532,"N"),
     (765,1268,"1"),(1125,1532,"N"),
-    (1375,505,"1"),(1375,1532,"N"),
+    (1375,555,"1"),(1375,1532,"N"),
     (1725,368,"1"),(2390,1778,"N"),
-    (1625,500,"1"),(1825,658,"N"),
+    (1625,550,"1"),(1825,658,"N"),
     (925,1178,"1"),(1545,1532,"N"),
     (900,205,"1"),(840,205,"N"),
     (900,425,"1"),(840,425,"N"),
@@ -319,8 +320,8 @@ def uml_class(x, y, w, name, attrs, methods, header, stroke):
 audit_attrs = []
 audit_methods = ["+approve_item(item_id)", "+reject_item(item_id, reason)",
                  "+ban_user(user_id)", "+handle_report(report_id, status, note)"]
-user_attrs = ["+user_id: int","+student_id: str","+password: str","+phone: str",
-              "+role: int","+status: int"]
+user_attrs = ["+user_id: int","+student_id: str","+nickname: str","+password: str",
+              "+phone: str","+role: int","+status: int"]
 user_methods = ["+login()","+update_profile()","+verify_token()"]
 item_attrs = ["+item_id: int","+user_id: int","+title: str","+type: int","+price: Decimal",
               "+image_urls: str","+status: int","+reject_reason: str"]
@@ -347,7 +348,7 @@ for (x,y,w), name, attrs, meths, cols in [
 
 # associations
 add2(edge([(1320,620),(760,620),(760,760),(520,760),(520,820)], one=0, many=-1))
-add2(edge([(1500,826),(1500,1500)], one=0, many=-1))
+add2(edge([(1500,860),(1500,1500)], one=0, many=-1))
 add2(edge([(1320,760),(900,760),(900,1450),(500,1450),(500,1650)], one=0, many=-1))
 add2(edge([(1920,700),(2380,700),(2380,2400),(1600,2400)], one=0, many=-1))
 add2(edge([(300,1294),(300,1400),(40,1400),(40,2400),(1000,2400)], one=0, many=-1))
@@ -371,7 +372,7 @@ for s in [
     add2(s)
 for x,y,s in [
     (1295,650,"1"),(545,795,"*"),
-    (1525,855,"1"),(1525,1475,"*"),
+    (1525,889,"1"),(1525,1475,"*"),
     (1945,725,"1"),(1615,2378,"*"),
     (325,1320,"1"),(975,2378,"*"),
     (1295,735,"1"),(525,1630,"*"),
